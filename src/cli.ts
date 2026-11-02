@@ -9,9 +9,10 @@ import type { MacShell } from "./dialog.js";
 import { createEmitter, type Subscriber } from "./events.js";
 import { type Clock, EXIT_REFUSED, gate, type Spawn } from "./gate.js";
 import { keychainToken } from "./keychain.js";
+import { formatLog, parseSince } from "./log.js";
 import { macPrompt } from "./notify.js";
 import type { Prompt } from "./prompt.js";
-import { type ReceiptSink, receiptsPath, receiptWriter } from "./receipts.js";
+import { parseReceipts, type ReceiptSink, receiptsPath, receiptWriter } from "./receipts.js";
 import type { ReadText } from "./references.js";
 import { loggerLog, systemLogWriter } from "./syslog.js";
 import { VERSION } from "./version.js";
@@ -90,6 +91,19 @@ function runCommand(parsed: Extract<ReturnType<typeof parseArgs>, { kind: "run" 
   return result.ran ? result.code : EXIT_REFUSED;
 }
 
+function showLog(parsed: Extract<ReturnType<typeof parseArgs>, { kind: "log" }>, deps: CliDeps) {
+  const since = parsed.since === undefined ? undefined : parseSince(parsed.since, deps.clock.now());
+  if (typeof since === "string") {
+    deps.stderr(`may-i: ${since}`);
+    return EXIT_USAGE;
+  }
+  const path = receiptsPath(deps.env, deps.home);
+  const { receipts, unreadable } = parseReceipts(deps.readText(path) ?? "");
+  for (const line of formatLog(receipts, { agent: parsed.agent, since })) deps.stdout(line);
+  if (unreadable > 0) deps.stderr(`may-i: ${unreadable} line(s) in ${path} are not receipts`);
+  return 0;
+}
+
 export function runCli(deps: CliDeps): number {
   const parsed = parseArgs(deps.argv);
   switch (parsed.kind) {
@@ -104,5 +118,7 @@ export function runCli(deps: CliDeps): number {
       return EXIT_USAGE;
     case "run":
       return runCommand(parsed, deps);
+    case "log":
+      return showLog(parsed, deps);
   }
 }

@@ -4,6 +4,7 @@ import { MAX_TIMEOUT_SECONDS } from "./config.js";
 export const EXIT_USAGE = 64;
 
 export const USAGE = `may-i [--agent <id>] [--reason <text>] [--timeout <s>] -- <command…>
+may-i log [--agent <id>] [--since <30m|12h|7d|date>]
 
 Runs <command> if its 1Password references are in the allow tier; asks you
 first if they are in the ask tier, and gives it the prod token only on Approve;
@@ -12,6 +13,7 @@ refuses if any is in the deny tier.
   --agent <id>      who is asking (default: $MAY_I_AGENT, or detected)
   --reason <text>   why, in the agent's words; shown in the prompt and the receipt
   --timeout <s>     wait less than the config's timeout (120 s by default); silence refuses
+  log               what each agent ran or was refused, from the receipts
   -h, --help        this text
   -v, --version     the version
 
@@ -21,6 +23,7 @@ export type Parsed =
   | { kind: "help" }
   | { kind: "version" }
   | { kind: "error"; message: string }
+  | { kind: "log"; agent?: string; since?: string }
   | {
       kind: "run";
       command: string[];
@@ -77,9 +80,11 @@ function readAt(argv: readonly string[], i: number, opts: Options): Parsed | num
 
 /**
  * `--` is required before the command. Without it, a misspelt option (`--yes`)
- * would become the program to run, at the one moment a surprise costs most.
+ * would become the program to run, at the one moment a surprise costs most,
+ * and a program called `log` could not be told from the subcommand.
  */
 export function parseArgs(argv: readonly string[]): Parsed {
+  if (argv[0] === "log") return parseLog(argv.slice(1));
   const opts: Options = {};
   for (let i = 0; i < argv.length; ) {
     const read = readAt(argv, i, opts);
@@ -87,4 +92,15 @@ export function parseArgs(argv: readonly string[]): Parsed {
     i += read;
   }
   return misuse("nothing to run: expected -- <command…>");
+}
+
+function parseLog(argv: readonly string[]): Parsed {
+  const out: Extract<Parsed, { kind: "log" }> = { kind: "log" };
+  for (let i = 0; i < argv.length; i += 2) {
+    const [flag, value] = [argv[i], argv[i + 1]];
+    if (flag !== "--agent" && flag !== "--since") return misuse(`log: unknown option ${flag}`);
+    if (value === undefined) return misuse(`log: ${flag} needs a value`);
+    out[flag === "--agent" ? "agent" : "since"] = value;
+  }
+  return out;
 }

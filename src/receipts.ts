@@ -101,3 +101,34 @@ export function fileSink(path: string): ReceiptSink {
     },
   };
 }
+
+const isReceipt = (v: unknown): v is Receipt =>
+  typeof v === "object" &&
+  v !== null &&
+  "id" in v &&
+  typeof v.id === "string" &&
+  "at" in v &&
+  typeof v.at === "string" &&
+  "outcome" in v &&
+  (v.outcome === "ran" || v.outcome === "refused") &&
+  "events" in v &&
+  Array.isArray(v.events);
+
+/** A line that is not a receipt is counted, never dropped in silence: a log
+ *  that hides its own damage cannot be trusted for the rest. */
+export function parseReceipts(text: string): { receipts: Receipt[]; unreadable: number } {
+  const receipts: Receipt[] = [];
+  let unreadable = 0;
+  for (const line of text.split("\n")) {
+    if (!line.trim()) continue;
+    let value: unknown;
+    try {
+      value = JSON.parse(line);
+    } catch {
+      value = null;
+    }
+    if (isReceipt(value)) receipts.push(value);
+    else unreadable += 1;
+  }
+  return { receipts, unreadable };
+}

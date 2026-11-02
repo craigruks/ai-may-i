@@ -128,6 +128,16 @@ describe("may-i", () => {
     expect(cli(["-h"])).toMatchObject({ code: 0, stdout: [USAGE] });
   });
 
+  it("shows the receipts with `log`, and refuses a --since it cannot read", () => {
+    const first = cli(["--agent", "codex-1", "--", ...PROD]);
+    const file = "/home/u/.local/state/may-i/receipts.jsonl";
+    const readText = (p: string) => (p === file ? `${first.receipts.join("\n")}\n` : null);
+    const log = cli(["log", "--agent", "codex-1"], { readText });
+    expect(log.code).toBe(0);
+    expect(log.stdout).toEqual([expect.stringContaining("codex-1  approved, exit 0  op read")]);
+    expect(cli(["log", "--since", "soon"], { readText }).code).toBe(EXIT_USAGE);
+  });
+
   it("reports a config warning, and still decides", () => {
     const readText = (p: string) => (p === USER_CONFIG ? "{" : null);
     const run = cli(["--", ...PROD], { readText });
