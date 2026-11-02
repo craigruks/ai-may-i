@@ -35,6 +35,10 @@ install dir=(home_directory() / ".local" / "bin"): build
     mkdir -p {{ quote(dir) }}
     ln -sf "$PWD/bin/may-i" "$PWD/bin/may-i-hook" {{ quote(dir) }}/
 
+# On a Mac, by hand: walk docs/manual-test.md with y/n prompts and write mac-check-results.md.
+mac-check: build
+    bun scripts/mac-check.ts
+
 # Apply Biome's safe fixes and formatting.
 fmt:
     bunx biome check --write
