@@ -1,0 +1,84 @@
+{
+  "redactCommand": [
+    {
+      "name": "keeps a reference, which is a name and not a secret",
+      "argv": ["op", "read", "op://Prod/db/password"],
+      "shown": "op read op://Prod/db/password"
+    },
+    {
+      "name": "masks a secret flag's inline value",
+      "argv": ["tool", "--password=hunter2"],
+      "shown": "tool --password=***"
+    },
+    {
+      "name": "masks a secret flag's value given as the next word",
+      "argv": ["tool", "--api-token", "t0ps3cret", "--name", "x"],
+      "shown": "tool --api-token *** --name x"
+    },
+    {
+      "name": "masks any NAME=value",
+      "argv": ["env", "TOKEN=hunter2", "make"],
+      "shown": "env TOKEN=*** make"
+    },
+    {
+      "name": "keeps NAME=reference",
+      "argv": ["env", "API_KEY=op://Prod/api/key", "make"],
+      "shown": "env API_KEY=op://Prod/api/key make"
+    },
+    {
+      "name": "masks a long token-shaped word",
+      "argv": ["deploy", "ghp_a1B2c3D4e5F6g7H8i9J0k1L2m3N4o5P6q7R8"],
+      "shown": "deploy ***"
+    },
+    {
+      "name": "masks base64 with a slash in it",
+      "argv": ["curl", "-d", "dGhpcyBpcyBhIHNlY3JldCB2YWx1ZS/0aGF0IGlzIGxvbmc9"],
+      "shown": "curl -d ***"
+    },
+    {
+      "name": "masks a JWT",
+      "argv": ["curl", "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.dozjgNryP4J3jVmNHl0w5N"],
+      "shown": "curl ***"
+    },
+    {
+      "name": "masks assignments, bearer tokens, URL passwords and secret flags inside bash -c",
+      "argv": [
+        "bash",
+        "-c",
+        "TOKEN=abc123 curl -H \"Authorization: Bearer abc.def\" https://u:pw@host/x --password hunter2"
+      ],
+      "shown": "bash -c 'TOKEN=*** curl -H \"Authorization: Bearer ***\" https://u:***@host/x --password ***'"
+    },
+    {
+      "name": "leaves paths, file names, hashes and ordinary flags readable",
+      "argv": [
+        "op",
+        "run",
+        "--env-file",
+        "./config/.env.production",
+        "--",
+        "node",
+        "/Users/craig/Library/Application/MayIntegrationTests2/out.js",
+        "3f2a9c1e8b7d6a5f4e3d2c1b0a9f8e7d6c5b4a39"
+      ],
+      "shown": "op run --env-file ./config/.env.production -- node /Users/craig/Library/Application/MayIntegrationTests2/out.js 3f2a9c1e8b7d6a5f4e3d2c1b0a9f8e7d6c5b4a39"
+    }
+  ],
+  "shellLine": [
+    {
+      "name": "leaves plain words bare",
+      "argv": ["op", "read", "op://v/i/f"],
+      "line": "op read op://v/i/f"
+    },
+    {
+      "name": "single-quotes shell syntax, spaces and quotes",
+      "argv": ["echo", "$(id)", "a b", "it's"],
+      "line": "echo '$(id)' 'a b' 'it'\\''s'"
+    },
+    {
+      "name": "shows a newline or escape code as text, never raw",
+      "argv": ["echo", "safe\n\n\nrm -rf ~", "\u001b[2K"],
+      "line": "echo $'safe\\n\\n\\nrm -rf ~' $'\\x1b[2K'"
+    }
+  ]
+}
