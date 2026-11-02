@@ -60,7 +60,7 @@ Put this in `~/.config/may-i/config.json`:
 ```
 
 Use your own vault name. Every reference in the `Staging` vault now runs at once.
-Everything else asks.
+Everything else asks. See [Configuration and tiers](/ai-may-i/configuration/) for every key.
 
 ## 5. Check the Mac
 
@@ -96,4 +96,6 @@ production token. Click Deny, or wait out the timeout, and may-i exits 77 and ru
 may-i log
 ```
 
-shows both requests, one line each.
+shows both requests, one line each. Next, put may-i behind your
+[task runner](/ai-may-i/task-runners/) and add the
+[Claude Code hook](/ai-may-i/claude-code-hook/).

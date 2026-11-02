@@ -30,6 +30,10 @@ export default defineConfig({
           label: "Getting Started",
           items: ["getting-started"],
         },
+        {
+          label: "Using may-i",
+          items: ["how-it-works", "configuration", "task-runners", "claude-code-hook", "receipts"],
+        },
       ],
     }),
   ],

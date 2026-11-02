@@ -3,7 +3,7 @@ title: ai-may-i
 description: Ask a human before an AI agent's command reaches production secrets in 1Password.
 ---
 
-import { LinkButton } from "@astrojs/starlight/components";
+import { CardGrid, LinkButton, LinkCard } from "@astrojs/starlight/components";
 
 `may-i` runs in front of an agent's command. It finds the 1Password references the command
 can reach and decides from your config: run it, ask you first, or refuse. When it asks,
@@ -12,6 +12,36 @@ Approve runs the command, and only that run gets the production token.
 
 <LinkButton href="/ai-may-i/getting-started/">Get started</LinkButton>
 <LinkButton href="https://github.com/craigruks/ai-may-i" variant="secondary" icon="external">GitHub</LinkButton>
+
+## The pages
+
+<CardGrid>
+  <LinkCard
+    title="How it works"
+    href="/ai-may-i/how-it-works/"
+    description="Every request as a sequence of typed events, and every ending as its exact sequence."
+  />
+  <LinkCard
+    title="Configuration and tiers"
+    href="/ai-may-i/configuration/"
+    description="Allow, ask and deny; every key; why a repo file can only tighten."
+  />
+  <LinkCard
+    title="Task runners"
+    href="/ai-may-i/task-runners/"
+    description="Deploy recipes behind may-i with just, make or a shell alias."
+  />
+  <LinkCard
+    title="The Claude Code hook"
+    href="/ai-may-i/claude-code-hook/"
+    description="Route Claude Code's op and varlock calls through may-i, and what the hook cannot see."
+  />
+  <LinkCard
+    title="Receipts, log and verify"
+    href="/ai-may-i/receipts/"
+    description="One JSONL receipt per request, a copy in the system log, and a check of every receipt."
+  />
+</CardGrid>
 
 ## One disclaimer
 
