@@ -1,0 +1,21 @@
+---
+title: ai-may-i
+description: Ask a human before an AI agent's command reaches production secrets in 1Password.
+---
+
+import { LinkButton } from "@astrojs/starlight/components";
+
+`may-i` runs in front of an agent's command. It finds the 1Password references the command
+can reach and decides from your config: run it, ask you first, or refuse. When it asks,
+the prompt shows which agent asks, the command, and each reference. Only a click on
+Approve runs the command, and only that run gets the production token.
+
+<LinkButton href="/ai-may-i/getting-started/">Get started</LinkButton>
+<LinkButton href="https://github.com/craigruks/ai-may-i" variant="secondary" icon="external">GitHub</LinkButton>
+
+## One disclaimer
+
+may-i is not audited and is not a security guarantee. In v0.1 it reads the production
+token through `/usr/bin/security`, so any process that runs as you can read the same
+Keychain item. The scope and every known limit are in
+[SECURITY.md](https://github.com/craigruks/ai-may-i/blob/main/SECURITY.md).

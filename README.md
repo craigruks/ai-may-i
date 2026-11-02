@@ -5,6 +5,9 @@
 [![CI](https://github.com/craigruks/ai-may-i/actions/workflows/ci.yml/badge.svg)](https://github.com/craigruks/ai-may-i/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](./LICENSE)
 
+Documentation: [`website/`](./website/src/content/docs/index.mdx), published at
+https://craigruks.github.io/ai-may-i/ once the repo is public.
+
 <!-- VOICE: brief 1 (README opening) -->
 `may-i` runs in front of an agent's command and shows you which agent asks, which command it runs and which 1Password references it reaches.
 
@@ -249,6 +252,7 @@ just            # lists every recipe
 just check      # lint, typecheck, limits and tests: what every commit passes
 just build      # bin/may-i, bin/may-i-hook and dist/
 just mac-check  # on a Mac, by hand: the checks only a person can do
+just site       # the docs site in website/, built to website/dist
 ```
 
 Source uses `node:*` APIs only, never the `Bun` global (a Biome rule checks it), so the

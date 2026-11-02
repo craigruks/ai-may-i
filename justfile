@@ -39,6 +39,10 @@ install dir=(home_directory() / ".local" / "bin"): build
 mac-check: build
     bun scripts/mac-check.ts
 
+# Build the docs site into website/dist. It is its own package, so the CLI keeps zero runtime dependencies.
+site:
+    cd website && bun install --frozen-lockfile && bun run build
+
 # Apply Biome's safe fixes and formatting.
 fmt:
     bunx biome check --write
