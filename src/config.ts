@@ -90,13 +90,20 @@ function parse(path: string, text: string): FileConfig | string {
   return out;
 }
 
-function load(path: string, text: string | null, warnings: string[]): FileConfig {
+/** Dropping a broken user file leaves the default, which asks for everything.
+ *  Dropping a broken repo file would loosen instead, since all it holds is asks
+ *  and denies, so in its place it asks for everything. */
+function load(
+  path: string,
+  text: string | null,
+  warnings: string[],
+  broken: FileConfig,
+): FileConfig {
   if (text === null) return {};
   const parsed = parse(path, text);
   if (typeof parsed === "string") {
-    // The default asks for everything, so a broken file can only make it ask more.
-    warnings.push(`${parsed}; ignoring it`);
-    return {};
+    warnings.push(`${parsed}; asking for everything until it is fixed`);
+    return broken;
   }
   return parsed;
 }
@@ -124,9 +131,9 @@ export function userConfigPath(env: LoadInput["env"], home: string): string {
 export function loadConfig(input: LoadInput): { config: Config; warnings: string[] } {
   const warnings: string[] = [];
   const userPath = userConfigPath(input.env, input.home);
-  const user = load(userPath, input.readText(userPath), warnings);
+  const user = load(userPath, input.readText(userPath), warnings, {});
   const found = findRepoFile(input.cwd, input.readText);
-  const repo = found ? load(found.path, found.text, warnings) : {};
+  const repo = found ? load(found.path, found.text, warnings, { ask: ["*"] }) : {};
   for (const key of USER_ONLY) {
     if (found && repo[key])
       warnings.push(`${found.path}: ignored \`${key}\`; set it in ${userPath}`);

@@ -75,6 +75,7 @@ describe("loadConfig", () => {
     ["a bad field", { [USER]: '{"deny":"op://Prod/*"}' }, "`deny` must be a list of strings"],
     ["an unknown key", { [USER]: '{"denyy":["op://Prod/*"]}' }, "unknown key `denyy`"],
     ["a file that is not JSON", { [USER]: "{" }, "not valid JSON"],
+    ["a broken repo file", { [REPO]: "{" }, "asking for everything until it is fixed"],
   ])("says what it did with %s", (_, files, warning) => {
     expect(loadConfig(input(files)).warnings.join("\n")).toContain(warning);
   });

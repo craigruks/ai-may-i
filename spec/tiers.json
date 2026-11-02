@@ -127,6 +127,34 @@
       "userFile": "{\"allow\": [\"op://Staging/*\"\"",
       "reference": "op://Staging/db/password",
       "tier": "ask"
+    },
+    {
+      "name": "asks for everything when the repo file is not JSON",
+      "userFile": "{\"allow\":[\"op://Staging/*\"]}",
+      "repoFile": "{\"ask\":[\"op://Staging/signing/*\"],}",
+      "reference": "op://Staging/db/password",
+      "tier": "ask"
+    },
+    {
+      "name": "asks for everything when the repo file has a bad field",
+      "userFile": "{\"allow\":[\"op://Staging/*\"]}",
+      "repoFile": "{\"ask\":\"op://Staging/signing/*\"}",
+      "reference": "op://Staging/db/password",
+      "tier": "ask"
+    },
+    {
+      "name": "asks for everything when the repo file has an unknown key",
+      "userFile": "{\"allow\":[\"op://Staging/*\"]}",
+      "repoFile": "{\"ask\":[\"op://Staging/signing/*\"],\"aks\":[]}",
+      "reference": "op://Staging/db/password",
+      "tier": "ask"
+    },
+    {
+      "name": "keeps the user's denies when the repo file is broken",
+      "userFile": "{\"deny\":[\"op://Prod/root/*\"]}",
+      "repoFile": "{",
+      "reference": "op://Prod/root/token",
+      "tier": "deny"
     }
   ]
 }
