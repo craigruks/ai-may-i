@@ -1,131 +1,156 @@
 {
   "programs": "Each program the line runs, in the order they start, as the programs it runs behind and then itself, joined by >.",
-  "caught": "Present on the known evasions: false means no op or varlock is found outside may-i, so the hook lets it through.",
+  "caught": "true: the hook routes the line through may-i; false: it lets the line through, because nothing in it reaches 1Password outside may-i, or (for the cases named as known limits) because the lexer cannot see it.",
   "cases": [
     {
       "name": "finds a plain command",
       "line": "op read op://v/i/f",
-      "programs": ["op"]
+      "programs": ["op"],
+      "caught": true
     },
     {
       "name": "finds each command in a chain and a pipe",
       "line": "ls && op read x; echo ok | wc -c",
-      "programs": ["ls", "op", "echo", "wc"]
+      "programs": ["ls", "op", "echo", "wc"],
+      "caught": true
     },
     {
       "name": "finds commands in a subshell, sent to the background",
       "line": "(cd x && op run -- make) &",
-      "programs": ["cd", "op"]
+      "programs": ["cd", "op"],
+      "caught": true
     },
     {
       "name": "finds past leading assignments",
       "line": "FOO=1 BAR=2 op read x",
-      "programs": ["op"]
+      "programs": ["op"],
+      "caught": true
     },
     {
       "name": "finds an absolute path, by its file name",
       "line": "/opt/homebrew/bin/op read x",
-      "programs": ["op"]
+      "programs": ["op"],
+      "caught": true
     },
     {
       "name": "finds behind command",
       "line": "command op read x",
-      "programs": ["command", "command>op"]
+      "programs": ["command", "command>op"],
+      "caught": true
     },
     {
       "name": "finds behind env, past its options and assignments",
       "line": "env -i -u HOME FOO=1 op read x",
-      "programs": ["env", "env>op"]
+      "programs": ["env", "env>op"],
+      "caught": true
     },
     {
       "name": "finds behind exec -a",
       "line": "exec -a name op read x",
-      "programs": ["exec", "exec>op"]
+      "programs": ["exec", "exec>op"],
+      "caught": true
     },
     {
       "name": "finds behind nohup",
       "line": "nohup op run -- server",
-      "programs": ["nohup", "nohup>op"]
+      "programs": ["nohup", "nohup>op"],
+      "caught": true
     },
     {
       "name": "finds behind time",
       "line": "time op read x",
-      "programs": ["time", "time>op"]
+      "programs": ["time", "time>op"],
+      "caught": true
     },
     {
       "name": "finds behind sudo, past -u and its value",
       "line": "sudo -u root -E op read x",
-      "programs": ["sudo", "sudo>op"]
+      "programs": ["sudo", "sudo>op"],
+      "caught": true
     },
     {
       "name": "finds behind timeout, past its signal and duration",
       "line": "timeout -s KILL 5 op read x",
-      "programs": ["timeout", "timeout>op"]
+      "programs": ["timeout", "timeout>op"],
+      "caught": true
     },
     {
       "name": "finds behind xargs with an attached option",
       "line": "echo x | xargs -I{} op read {}",
-      "programs": ["echo", "xargs", "xargs>op"]
+      "programs": ["echo", "xargs", "xargs>op"],
+      "caught": true
     },
     {
       "name": "finds behind xargs with a valued option",
       "line": "xargs -n 1 op read",
-      "programs": ["xargs", "xargs>op"]
+      "programs": ["xargs", "xargs>op"],
+      "caught": true
     },
     {
       "name": "finds behind a package runner verb",
       "line": "pnpm exec varlock run -- node app.js",
-      "programs": ["pnpm", "pnpm>varlock"]
+      "programs": ["pnpm", "pnpm>varlock"],
+      "caught": true
     },
     {
       "name": "finds inside bash -c",
       "line": "bash -c 'op read x | wc'",
-      "programs": ["bash", "bash>op", "bash>wc"]
+      "programs": ["bash", "bash>op", "bash>wc"],
+      "caught": true
     },
     {
       "name": "finds inside sh -lc",
       "line": "sh -lc \"op run -- make\"",
-      "programs": ["sh", "sh>op"]
+      "programs": ["sh", "sh>op"],
+      "caught": true
     },
     {
       "name": "finds inside eval",
       "line": "eval op read x",
-      "programs": ["eval", "eval>op"]
+      "programs": ["eval", "eval>op"],
+      "caught": true
     },
     {
       "name": "finds in substitutions, run before the command they sit in",
       "line": "echo $(op read x) `op read y`",
-      "programs": ["op", "op", "echo"]
+      "programs": ["op", "op", "echo"],
+      "caught": true
     },
     {
       "name": "finds in a substitution inside double quotes",
       "line": "echo \"$(op read x)\"",
-      "programs": ["op", "echo"]
+      "programs": ["op", "echo"],
+      "caught": true
     },
     {
       "name": "finds in a process substitution",
       "line": "diff <(op read a) b",
-      "programs": ["op", "diff"]
+      "programs": ["op", "diff"],
+      "caught": true
     },
     {
       "name": "finds behind may-i, past its options",
       "line": "may-i --agent a --reason 'why' -- op read x",
-      "programs": ["may-i", "may-i>op"]
+      "programs": ["may-i", "may-i>op"],
+      "caught": false
     },
     {
       "name": "finds behind may-i and the shell it runs",
       "line": "may-i -- bash -c 'op read x; op run -- y'",
-      "programs": ["may-i", "may-i>bash", "may-i>bash>op", "may-i>bash>op"]
+      "programs": ["may-i", "may-i>bash", "may-i>bash>op", "may-i>bash>op"],
+      "caught": false
     },
     {
       "name": "finds beside may-i, for a substitution the outer shell runs first",
       "line": "may-i -- echo $(op read x)",
-      "programs": ["op", "may-i", "may-i>echo"]
+      "programs": ["op", "may-i", "may-i>echo"],
+      "caught": true
     },
     {
       "name": "finds nothing in quotes or a comment",
       "line": "echo 'op read x' \"op run\" # op read",
-      "programs": ["echo"]
+      "programs": ["echo"],
+      "caught": false
     },
     {
       "name": "does not see op inside a script file (a known limit)",
@@ -143,6 +168,96 @@
       "name": "does not see op fed to a shell on stdin (a known limit)",
       "line": "echo 'op read x' | sh",
       "programs": ["echo", "sh"],
+      "caught": false
+    },
+    {
+      "name": "catches an op subcommand that reaches the account",
+      "line": "op item get Stripe --fields secret",
+      "programs": ["op"],
+      "caught": true
+    },
+    {
+      "name": "catches op behind a bare env",
+      "line": "env op read x",
+      "programs": ["env", "env>op"],
+      "caught": true
+    },
+    {
+      "name": "catches op behind a bare xargs",
+      "line": "echo x | xargs op read",
+      "programs": ["echo", "xargs", "xargs>op"],
+      "caught": true
+    },
+    {
+      "name": "catches op after a chain",
+      "line": "ls && op inject -i tpl -o out",
+      "programs": ["ls", "op"],
+      "caught": true
+    },
+    {
+      "name": "catches varlock behind npx",
+      "line": "npx varlock run -- node app.js",
+      "programs": ["npx", "npx>varlock"],
+      "caught": true
+    },
+    {
+      "name": "catches a bare varlock, which loads the vault",
+      "line": "varlock",
+      "programs": ["varlock"],
+      "caught": true
+    },
+    {
+      "name": "catches op chained after may-i, which gates only its own command",
+      "line": "may-i -- true && op read x",
+      "programs": ["may-i", "may-i>true", "op"],
+      "caught": true
+    },
+    {
+      "name": "lets through op behind may-i with options",
+      "line": "may-i --agent a --reason 'why' -- op run --env-file .env -- npm start",
+      "programs": ["may-i", "may-i>op"],
+      "caught": false
+    },
+    {
+      "name": "lets through may-i run by bunx",
+      "line": "bunx may-i -- varlock run -- node app.js",
+      "programs": ["bunx", "bunx>may-i", "bunx>may-i>varlock"],
+      "caught": false
+    },
+    {
+      "name": "lets through may-i by a relative path",
+      "line": "./node_modules/.bin/may-i -- op read x",
+      "programs": ["may-i", "may-i>op"],
+      "caught": false
+    },
+    {
+      "name": "lets through op --version, which reaches nothing",
+      "line": "op --version",
+      "programs": ["op"],
+      "caught": false
+    },
+    {
+      "name": "lets through op help",
+      "line": "op help",
+      "programs": ["op"],
+      "caught": false
+    },
+    {
+      "name": "lets through a commit message that mentions op",
+      "line": "git commit -m \"gate op read behind consent\"",
+      "programs": ["git"],
+      "caught": false
+    },
+    {
+      "name": "lets through a grep for op",
+      "line": "grep -r 'op run' src",
+      "programs": ["grep"],
+      "caught": false
+    },
+    {
+      "name": "lets through a program whose name starts with op",
+      "line": "opener read x",
+      "programs": ["opener"],
       "caught": false
     }
   ]
