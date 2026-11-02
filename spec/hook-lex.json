@@ -1,0 +1,149 @@
+{
+  "programs": "Each program the line runs, in the order they start, as the programs it runs behind and then itself, joined by >.",
+  "caught": "Present on the known evasions: false means no op or varlock is found outside may-i, so the hook lets it through.",
+  "cases": [
+    {
+      "name": "finds a plain command",
+      "line": "op read op://v/i/f",
+      "programs": ["op"]
+    },
+    {
+      "name": "finds each command in a chain and a pipe",
+      "line": "ls && op read x; echo ok | wc -c",
+      "programs": ["ls", "op", "echo", "wc"]
+    },
+    {
+      "name": "finds commands in a subshell, sent to the background",
+      "line": "(cd x && op run -- make) &",
+      "programs": ["cd", "op"]
+    },
+    {
+      "name": "finds past leading assignments",
+      "line": "FOO=1 BAR=2 op read x",
+      "programs": ["op"]
+    },
+    {
+      "name": "finds an absolute path, by its file name",
+      "line": "/opt/homebrew/bin/op read x",
+      "programs": ["op"]
+    },
+    {
+      "name": "finds behind command",
+      "line": "command op read x",
+      "programs": ["command", "command>op"]
+    },
+    {
+      "name": "finds behind env, past its options and assignments",
+      "line": "env -i -u HOME FOO=1 op read x",
+      "programs": ["env", "env>op"]
+    },
+    {
+      "name": "finds behind exec -a",
+      "line": "exec -a name op read x",
+      "programs": ["exec", "exec>op"]
+    },
+    {
+      "name": "finds behind nohup",
+      "line": "nohup op run -- server",
+      "programs": ["nohup", "nohup>op"]
+    },
+    {
+      "name": "finds behind time",
+      "line": "time op read x",
+      "programs": ["time", "time>op"]
+    },
+    {
+      "name": "finds behind sudo, past -u and its value",
+      "line": "sudo -u root -E op read x",
+      "programs": ["sudo", "sudo>op"]
+    },
+    {
+      "name": "finds behind timeout, past its signal and duration",
+      "line": "timeout -s KILL 5 op read x",
+      "programs": ["timeout", "timeout>op"]
+    },
+    {
+      "name": "finds behind xargs with an attached option",
+      "line": "echo x | xargs -I{} op read {}",
+      "programs": ["echo", "xargs", "xargs>op"]
+    },
+    {
+      "name": "finds behind xargs with a valued option",
+      "line": "xargs -n 1 op read",
+      "programs": ["xargs", "xargs>op"]
+    },
+    {
+      "name": "finds behind a package runner verb",
+      "line": "pnpm exec varlock run -- node app.js",
+      "programs": ["pnpm", "pnpm>varlock"]
+    },
+    {
+      "name": "finds inside bash -c",
+      "line": "bash -c 'op read x | wc'",
+      "programs": ["bash", "bash>op", "bash>wc"]
+    },
+    {
+      "name": "finds inside sh -lc",
+      "line": "sh -lc \"op run -- make\"",
+      "programs": ["sh", "sh>op"]
+    },
+    {
+      "name": "finds inside eval",
+      "line": "eval op read x",
+      "programs": ["eval", "eval>op"]
+    },
+    {
+      "name": "finds in substitutions, run before the command they sit in",
+      "line": "echo $(op read x) `op read y`",
+      "programs": ["op", "op", "echo"]
+    },
+    {
+      "name": "finds in a substitution inside double quotes",
+      "line": "echo \"$(op read x)\"",
+      "programs": ["op", "echo"]
+    },
+    {
+      "name": "finds in a process substitution",
+      "line": "diff <(op read a) b",
+      "programs": ["op", "diff"]
+    },
+    {
+      "name": "finds behind may-i, past its options",
+      "line": "may-i --agent a --reason 'why' -- op read x",
+      "programs": ["may-i", "may-i>op"]
+    },
+    {
+      "name": "finds behind may-i and the shell it runs",
+      "line": "may-i -- bash -c 'op read x; op run -- y'",
+      "programs": ["may-i", "may-i>bash", "may-i>bash>op", "may-i>bash>op"]
+    },
+    {
+      "name": "finds beside may-i, for a substitution the outer shell runs first",
+      "line": "may-i -- echo $(op read x)",
+      "programs": ["op", "may-i", "may-i>echo"]
+    },
+    {
+      "name": "finds nothing in quotes or a comment",
+      "line": "echo 'op read x' \"op run\" # op read",
+      "programs": ["echo"]
+    },
+    {
+      "name": "does not see op inside a script file (a known limit)",
+      "line": "./deploy.sh",
+      "programs": ["deploy.sh"],
+      "caught": false
+    },
+    {
+      "name": "does not see op named by a variable (a known limit)",
+      "line": "$OP read op://Prod/db/password",
+      "programs": ["$OP"],
+      "caught": false
+    },
+    {
+      "name": "does not see op fed to a shell on stdin (a known limit)",
+      "line": "echo 'op read x' | sh",
+      "programs": ["echo", "sh"],
+      "caught": false
+    }
+  ]
+}
