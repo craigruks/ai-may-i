@@ -1,0 +1,46 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  linux:
+    name: Lint, test, build, then run the built JS on Node 22
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      # Bun and just at the versions mise.toml pins, cached between runs.
+      - uses: jdx/mise-action@v5
+      - uses: actions/cache@v6
+        with:
+          path: ~/.bun/install/cache
+          key: bun-${{ runner.os }}-${{ hashFiles('bun.lock') }}
+      - run: bun install --frozen-lockfile
+      - run: just check
+      - run: just build
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+      - name: Node smoke test of dist/
+        env:
+          HOME: ${{ runner.temp }}/home
+        run: |
+          test "$(node dist/main.js --version)" = "$(node -p 'require("./package.json").version')"
+          # No display on Linux, so an ask-tier command must be refused, with 77, running nothing.
+          set +e
+          node dist/main.js --reason "ci smoke" -- op read op://Prod/db/password
+          code=$?
+          set -e
+          test "$code" -eq 77
+          grep -q '"outcome":"refused"' "$HOME/.local/state/may-i/receipts.jsonl"
