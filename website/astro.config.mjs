@@ -38,6 +38,10 @@ export default defineConfig({
           label: "Guides",
           items: ["guides/service-accounts"],
         },
+        {
+          label: "Reference",
+          items: ["objections"],
+        },
       ],
     }),
   ],
