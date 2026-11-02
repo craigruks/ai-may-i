@@ -6,6 +6,21 @@
   "type": "module",
   "license": "MIT",
   "author": "Craig Ruks",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "bin": {
+    "may-i": "dist/main.js",
+    "may-i-hook": "dist/hook-main.js"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
   "engines": {
     "node": ">=22"
   },
