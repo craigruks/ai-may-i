@@ -1,0 +1,44 @@
+{
+  "$schema": "./node_modules/@biomejs/biome/configuration_schema.json",
+  "vcs": { "enabled": true, "clientKind": "git", "useIgnoreFile": true },
+  "files": { "includes": ["**", "!bin", "!dist"] },
+  "formatter": { "indentStyle": "space", "lineWidth": 100 },
+  "linter": {
+    "rules": {
+      "preset": "recommended",
+      "suspicious": { "noExplicitAny": "error" },
+      "style": { "noNonNullAssertion": "error" },
+      "complexity": { "noExcessiveCognitiveComplexity": "error" }
+    }
+  },
+  "overrides": [
+    {
+      "includes": ["src/**"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedGlobals": {
+              "level": "error",
+              "options": {
+                "deniedGlobals": {
+                  "Bun": "src/ runs on Node too: use a node:* API instead of the Bun global."
+                }
+              }
+            },
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": ["bun", "bun:*"],
+                    "message": "src/ runs on Node too: use a node:* module instead."
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
+}

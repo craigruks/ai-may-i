@@ -1,0 +1,22 @@
+# List the recipes.
+default:
+    @just --list
+
+# Lint, typecheck and test: what every commit has to pass.
+check: lint typecheck test
+
+# Biome: format and lint rules, including no `Bun` global in src/.
+lint:
+    bunx biome check
+
+# Strict tsc over src, tests and scripts. Emits nothing.
+typecheck:
+    bunx tsc -p tsconfig.json
+
+# Run the tests. Pass a path through: `just test test/events.test.ts`.
+test *args:
+    bun test {{args}}
+
+# Apply Biome's safe fixes and formatting.
+fmt:
+    bunx biome check --write

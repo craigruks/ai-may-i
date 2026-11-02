@@ -1,0 +1,18 @@
+{
+  "name": "ai-may-i",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Ask a human before an AI agent's command reaches production secrets in 1Password.",
+  "type": "module",
+  "license": "MIT",
+  "author": "Craig Ruks",
+  "engines": {
+    "node": ">=22"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.6.4",
+    "@types/bun": "1.4.4",
+    "@types/node": "22.20.5",
+    "typescript": "5.9.3"
+  }
+}
