@@ -138,6 +138,19 @@ describe("may-i", () => {
     expect(cli(["log", "--since", "soon"], { readText }).code).toBe(EXIT_USAGE);
   });
 
+  it("exits 0 from `verify` when the receipts hold up, and 1 when one does not", () => {
+    const [line = ""] = cli(["--", ...PROD]).receipts;
+    const file = "/home/u/.local/state/may-i/receipts.jsonl";
+    const verifying = (text: string) =>
+      cli(["verify"], { readText: (p) => (p === file ? text : null) });
+    expect(verifying(line)).toMatchObject({
+      code: 0,
+      stdout: ["1 receipt(s) checked: the gate held"],
+    });
+    expect(verifying(line.replace('"outcome":"ran"', '"outcome":"refused"')).code).toBe(1);
+    expect(verifying(`${line}\ngarbage`).code).toBe(1);
+  });
+
   it("reports a config warning, and still decides", () => {
     const readText = (p: string) => (p === USER_CONFIG ? "{" : null);
     const run = cli(["--", ...PROD], { readText });

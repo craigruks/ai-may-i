@@ -5,6 +5,7 @@ export const EXIT_USAGE = 64;
 
 export const USAGE = `may-i [--agent <id>] [--reason <text>] [--timeout <s>] -- <command…>
 may-i log [--agent <id>] [--since <30m|12h|7d|date>]
+may-i verify
 
 Runs <command> if its 1Password references are in the allow tier; asks you
 first if they are in the ask tier, and gives it the prod token only on Approve;
@@ -14,6 +15,7 @@ refuses if any is in the deny tier.
   --reason <text>   why, in the agent's words; shown in the prompt and the receipt
   --timeout <s>     wait less than the config's timeout (120 s by default); silence refuses
   log               what each agent ran or was refused, from the receipts
+  verify            re-judge every receipt; exits 1 if any shows the gate did not hold
   -h, --help        this text
   -v, --version     the version
 
@@ -24,6 +26,7 @@ export type Parsed =
   | { kind: "version" }
   | { kind: "error"; message: string }
   | { kind: "log"; agent?: string; since?: string }
+  | { kind: "verify" }
   | {
       kind: "run";
       command: string[];
@@ -85,6 +88,9 @@ function readAt(argv: readonly string[], i: number, opts: Options): Parsed | num
  */
 export function parseArgs(argv: readonly string[]): Parsed {
   if (argv[0] === "log") return parseLog(argv.slice(1));
+  if (argv[0] === "verify") {
+    return argv.length === 1 ? { kind: "verify" } : misuse("verify takes no options");
+  }
   const opts: Options = {};
   for (let i = 0; i < argv.length; ) {
     const read = readAt(argv, i, opts);

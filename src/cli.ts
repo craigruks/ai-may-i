@@ -15,6 +15,7 @@ import type { Prompt } from "./prompt.js";
 import { parseReceipts, type ReceiptSink, receiptsPath, receiptWriter } from "./receipts.js";
 import type { ReadText } from "./references.js";
 import { loggerLog, systemLogWriter } from "./syslog.js";
+import { verify } from "./verify.js";
 import { VERSION } from "./version.js";
 
 export interface CliDeps {
@@ -104,6 +105,17 @@ function showLog(parsed: Extract<ReturnType<typeof parseArgs>, { kind: "log" }>,
   return 0;
 }
 
+function runVerify(deps: CliDeps): number {
+  const path = receiptsPath(deps.env, deps.home);
+  const { receipts, unreadable } = parseReceipts(deps.readText(path) ?? "");
+  const findings = verify(receipts);
+  for (const f of findings) deps.stdout(`${f.id}: ${f.problem}`);
+  if (unreadable > 0) deps.stdout(`${unreadable} line(s) in ${path} are not receipts`);
+  const held = findings.length === 0 && unreadable === 0;
+  deps.stdout(`${receipts.length} receipt(s) checked: ${held ? "the gate held" : "see above"}`);
+  return held ? 0 : 1;
+}
+
 export function runCli(deps: CliDeps): number {
   const parsed = parseArgs(deps.argv);
   switch (parsed.kind) {
@@ -120,5 +132,7 @@ export function runCli(deps: CliDeps): number {
       return runCommand(parsed, deps);
     case "log":
       return showLog(parsed, deps);
+    case "verify":
+      return runVerify(deps);
   }
 }
