@@ -1,0 +1,83 @@
+{
+  "injections": [
+    {
+      "name": "closes the quote and runs a command",
+      "text": "\" & (do shell script \"id\") & \"",
+      "literal": "\"\\\" & (do shell script \\\"id\\\") & \\\"\""
+    },
+    {
+      "name": "pre-escapes its own quotes",
+      "text": "\\\" & (do shell script \\\"id\\\") & \\\"",
+      "literal": "\"\\\\\\\" & (do shell script \\\\\\\"id\\\\\\\") & \\\\\\\"\""
+    },
+    {
+      "name": "doubles a backslash before the quote",
+      "text": "\\\\\" & (do shell script \"id\") & \"",
+      "literal": "\"\\\\\\\\\\\" & (do shell script \\\"id\\\") & \\\"\""
+    },
+    {
+      "name": "breaks the line to start a new statement",
+      "text": "\"\ndo shell script \"id\"\n--",
+      "literal": "\"\\\"\\ndo shell script \\\"id\\\"\\n--\""
+    },
+    {
+      "name": "uses a carriage return instead",
+      "text": "\"\rdo shell script \"id\"",
+      "literal": "\"\\\"\\rdo shell script \\\"id\\\"\""
+    },
+    {
+      "name": "ends on a lone backslash",
+      "text": "trailing backslash \\",
+      "literal": "\"trailing backslash \\\\\""
+    },
+    {
+      "name": "uses the continuation character",
+      "text": "\" ¬\n& (do shell script \"id\")",
+      "literal": "\"\\\" ¬\\n& (do shell script \\\"id\\\")\""
+    },
+    {
+      "name": "uses a raw data literal",
+      "text": "«data utxt0022» & (do shell script \"id\")",
+      "literal": "\"«data utxt0022» & (do shell script \\\"id\\\")\""
+    },
+    {
+      "name": "hides a NUL and a bidi override",
+      "text": "a\u0000b\u202ec",
+      "literal": "\"a\ufffdb\ufffdc\""
+    },
+    {
+      "name": "keeps ordinary Unicode as it is",
+      "text": "café 🔑",
+      "literal": "\"café 🔑\""
+    }
+  ],
+  "fuzz": {
+    "prng": "mulberry32, 32-bit unsigned arithmetic: a = (a + 0x6d2b79f5) mod 2^32; t = imul(a ^ (a >>> 15), a | 1); t = (t + imul(t ^ (t >>> 7), t | 61)) ^ t; next = ((t ^ (t >>> 14)) >>> 0) / 2^32",
+    "case": "length = floor(next * maxLength); then for each of length picks: pool = next < 0.5 ? hostile : plain; append pool[floor(next * pool.length)]",
+    "seed": 1835104617,
+    "count": 5000,
+    "maxLength": 40,
+    "hostile": [
+      "\"",
+      "\\",
+      "\n",
+      "\r",
+      "\t",
+      "\u0000",
+      "\u001b",
+      "\u2028",
+      "\u202e",
+      "¬",
+      "«",
+      "»"
+    ],
+    "plain": ["a", " ", "&", "(", ")", "'", "$", "do shell script ", "é", "🔑", "op://Prod/x/y"],
+    "unprintable": ["\u0000", "\u001b", "\u2028", "\u202e"],
+    "replacement": "\ufffd",
+    "first": [
+      "\"»'\u001b«\"op://Prod/x/y¬»\t\n🔑\u2028«\")(ado shell script ",
+      "'\u202ea\rdo shell script $",
+      "«\n\"&\u202e\u001bé) "
+    ]
+  }
+}
