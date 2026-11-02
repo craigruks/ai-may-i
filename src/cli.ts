@@ -1,0 +1,108 @@
+/**
+ * Wires the gate to a real machine. Parses, builds the subscribers, picks the
+ * prompt for the platform, and calls the gate. No decision is made here.
+ */
+
+import { EXIT_USAGE, parseArgs, USAGE } from "./args.js";
+import { loadConfig } from "./config.js";
+import type { MacShell } from "./dialog.js";
+import { createEmitter, type Subscriber } from "./events.js";
+import { type Clock, EXIT_REFUSED, gate, type Spawn } from "./gate.js";
+import { keychainToken } from "./keychain.js";
+import { macPrompt } from "./notify.js";
+import type { Prompt } from "./prompt.js";
+import { type ReceiptSink, receiptsPath, receiptWriter } from "./receipts.js";
+import type { ReadText } from "./references.js";
+import { loggerLog, systemLogWriter } from "./syslog.js";
+import { VERSION } from "./version.js";
+
+export interface CliDeps {
+  argv: readonly string[];
+  env: Readonly<Record<string, string | undefined>>;
+  cwd: string;
+  home: string;
+  platform: string;
+  readText: ReadText;
+  /** Every macOS helper (osascript, alerter, security, logger) runs through this. */
+  shell: MacShell;
+  spawn: Spawn;
+  sinkFor: (path: string) => ReceiptSink;
+  clock: Clock;
+  newId: () => string;
+  stdout: (line: string) => void;
+  stderr: (line: string) => void;
+}
+
+/** There is no terminal fallback, on purpose: the agent being gated owns the
+ *  terminal, so a y/N it can type itself is no consent at all. */
+function promptFor(deps: CliDeps): Prompt {
+  if (deps.platform === "darwin") return macPrompt(deps.shell, deps.stderr);
+  return {
+    unavailable: `may-i asks only on macOS, and this is ${deps.platform}`,
+    ask: () => ({ answer: "error", via: "prompt", detail: "no prompt on this platform" }),
+  };
+}
+
+/** Says out loud when a subscriber fails, then lets the gate decide what that means. */
+function reporting(name: string, subscriber: Subscriber, deps: CliDeps): Subscriber {
+  return (event) => {
+    try {
+      subscriber(event);
+    } catch (err) {
+      deps.stderr(`may-i: ${name} failed: ${err instanceof Error ? err.message : String(err)}`);
+      throw err;
+    }
+  };
+}
+
+function runCommand(parsed: Extract<ReturnType<typeof parseArgs>, { kind: "run" }>, deps: CliDeps) {
+  const { config, warnings } = loadConfig(deps);
+  for (const w of warnings) deps.stderr(`may-i: ${w}`);
+  const events = createEmitter();
+  const sink = deps.sinkFor(receiptsPath(deps.env, deps.home));
+  events.subscribe(reporting("the receipt", receiptWriter(sink), deps));
+  if (deps.platform === "darwin") {
+    events.subscribe(reporting("the system log", systemLogWriter(loggerLog(deps.shell)), deps));
+  }
+  events.subscribe((e) => {
+    if (e.type === "refused") deps.stderr(`may-i: refused: ${e.why}`);
+  });
+  const result = gate(
+    {
+      command: parsed.command,
+      agent: parsed.agent,
+      reason: parsed.reason,
+      timeoutSeconds: parsed.timeoutSeconds,
+    },
+    {
+      config,
+      env: deps.env,
+      cwd: deps.cwd,
+      readText: deps.readText,
+      prompt: promptFor(deps),
+      token: keychainToken(deps.shell),
+      spawn: deps.spawn,
+      events,
+      clock: deps.clock,
+      newId: deps.newId,
+    },
+  );
+  return result.ran ? result.code : EXIT_REFUSED;
+}
+
+export function runCli(deps: CliDeps): number {
+  const parsed = parseArgs(deps.argv);
+  switch (parsed.kind) {
+    case "help":
+      deps.stdout(USAGE);
+      return 0;
+    case "version":
+      deps.stdout(VERSION);
+      return 0;
+    case "error":
+      deps.stderr(`may-i: ${parsed.message}\n\n${USAGE}`);
+      return EXIT_USAGE;
+    case "run":
+      return runCommand(parsed, deps);
+  }
+}
