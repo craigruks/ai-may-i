@@ -1,0 +1,85 @@
+{
+  "rules": {
+    "allow": ["op://Staging/*"],
+    "ask": ["op://Staging/signing-key/*"],
+    "deny": ["op://Prod/root/*"]
+  },
+  "decide": [
+    {
+      "name": "allows a reference the allow glob covers",
+      "references": ["op://Staging/db/password"],
+      "tier": "allow"
+    },
+    {
+      "name": "asks for a reference no rule matches",
+      "references": ["op://Prod/db/password"],
+      "tier": "ask",
+      "why": "op://Prod/db/password: no rule matches"
+    },
+    {
+      "name": "denies a reference the deny glob covers",
+      "references": ["op://Prod/root/token"],
+      "tier": "deny"
+    },
+    {
+      "name": "asks when allow and ask are mixed",
+      "references": ["op://Staging/a/b", "op://Prod/db/password"],
+      "tier": "ask"
+    },
+    {
+      "name": "denies when allow and deny are mixed, and names the rule that decided",
+      "references": ["op://Staging/a/b", "op://Prod/root/k"],
+      "tier": "deny",
+      "why": "op://Prod/root/k: deny op://Prod/root/*"
+    },
+    {
+      "name": "lets an ask carve one item out of an allowed vault",
+      "references": ["op://Staging/signing-key/x"],
+      "tier": "ask"
+    },
+    {
+      "name": "matches a glob whole, not as a prefix",
+      "references": ["op://StagingOld/db/password"],
+      "tier": "ask"
+    },
+    {
+      "name": "asks when no reference was found",
+      "references": [],
+      "tier": "ask",
+      "why": "no reference could be read"
+    },
+    {
+      "name": "asks when a named file was unreadable, even if the rest is allowed",
+      "references": ["op://Staging/a/b"],
+      "unreadable": [".env"],
+      "tier": "ask",
+      "why": "could not read .env"
+    },
+    {
+      "name": "keeps a deny when a file was unreadable",
+      "references": ["op://Prod/root/k"],
+      "unreadable": [".env"],
+      "tier": "deny"
+    },
+    {
+      "name": "denies regardless of case",
+      "references": ["op://prod/root/k"],
+      "tier": "deny"
+    },
+    {
+      "name": "allows only on the exact case",
+      "references": ["op://staging/db/password"],
+      "tier": "ask"
+    },
+    {
+      "name": "asks for everything when there are no rules",
+      "rules": {
+        "allow": [],
+        "ask": [],
+        "deny": []
+      },
+      "references": ["op://Staging/db/password"],
+      "tier": "ask"
+    }
+  ]
+}
