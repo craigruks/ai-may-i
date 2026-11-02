@@ -1,0 +1,132 @@
+{
+  "rules": {
+    "allow": ["op://Staging/*"],
+    "ask": [],
+    "deny": ["op://Prod/root/*"]
+  },
+  "trace": "One entry per event: its type, plus :tier on tier-decided, :answer on answered and :credentials on allowed.",
+  "prompts": "approve, deny, timeout, closed and error are what the prompt answers; throws is a prompt that throws; unavailable is a prompt that cannot ask here, with the reason 'may-i asks only on macOS'.",
+  "endings": [
+    {
+      "name": "allow tier: runs at once, unasked",
+      "command": ["op", "read", "op://Staging/db/password"],
+      "prompt": "deny",
+      "sequence": [
+        "requested",
+        "references-found",
+        "tier-decided:allow",
+        "allowed:caller",
+        "spawned",
+        "exited"
+      ],
+      "ran": true
+    },
+    {
+      "name": "ask tier, Approve: runs",
+      "command": ["op", "read", "op://Prod/db/password"],
+      "prompt": "approve",
+      "sequence": [
+        "requested",
+        "references-found",
+        "tier-decided:ask",
+        "asked",
+        "answered:approve",
+        "allowed:caller",
+        "spawned",
+        "exited"
+      ],
+      "ran": true
+    },
+    {
+      "name": "deny tier: refused unasked",
+      "command": ["op", "read", "op://Prod/root/token"],
+      "prompt": "approve",
+      "sequence": ["requested", "references-found", "tier-decided:deny", "refused"],
+      "ran": false,
+      "why": "deny tier: op://Prod/root/token: deny op://Prod/root/*"
+    },
+    {
+      "name": "ask tier, Deny: refused",
+      "command": ["op", "read", "op://Prod/db/password"],
+      "prompt": "deny",
+      "sequence": [
+        "requested",
+        "references-found",
+        "tier-decided:ask",
+        "asked",
+        "answered:deny",
+        "refused"
+      ],
+      "ran": false,
+      "why": "not approved: deny"
+    },
+    {
+      "name": "ask tier, timeout: refused",
+      "command": ["op", "read", "op://Prod/db/password"],
+      "prompt": "timeout",
+      "sequence": [
+        "requested",
+        "references-found",
+        "tier-decided:ask",
+        "asked",
+        "answered:timeout",
+        "refused"
+      ],
+      "ran": false,
+      "why": "not approved: timeout"
+    },
+    {
+      "name": "ask tier, closed: refused",
+      "command": ["op", "read", "op://Prod/db/password"],
+      "prompt": "closed",
+      "sequence": [
+        "requested",
+        "references-found",
+        "tier-decided:ask",
+        "asked",
+        "answered:closed",
+        "refused"
+      ],
+      "ran": false,
+      "why": "not approved: closed"
+    },
+    {
+      "name": "ask tier, error: refused",
+      "command": ["op", "read", "op://Prod/db/password"],
+      "prompt": "error",
+      "sequence": [
+        "requested",
+        "references-found",
+        "tier-decided:ask",
+        "asked",
+        "answered:error",
+        "refused"
+      ],
+      "ran": false,
+      "why": "not approved: error"
+    },
+    {
+      "name": "ask tier, a prompt that throws: an error, refused",
+      "command": ["op", "read", "op://Prod/db/password"],
+      "prompt": "throws",
+      "sequence": [
+        "requested",
+        "references-found",
+        "tier-decided:ask",
+        "asked",
+        "answered:error",
+        "refused"
+      ],
+      "ran": false,
+      "why": "not approved: error"
+    },
+    {
+      "name": "ask tier, no display: refused before asking",
+      "command": ["op", "read", "op://Prod/db/password"],
+      "prompt": "unavailable",
+      "sequence": ["requested", "references-found", "tier-decided:ask", "refused"],
+      "ran": false,
+      "why": "cannot ask: may-i asks only on macOS"
+    }
+  ]
+}

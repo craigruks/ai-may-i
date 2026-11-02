@@ -1,7 +1,11 @@
 // Proves each way a request can go, as the exact sequence of events it emits, and that
-// nothing runs unless that sequence reaches `allowed`.
+// nothing runs unless that sequence reaches `allowed`. The endings live in spec/lifecycle.json.
 import { describe, expect, it } from "bun:test";
+import spec from "../spec/lifecycle.json" with { type: "json" };
+import { DEFAULT_CONFIG } from "../src/config.js";
+import { ANSWERS, type Answer, type GateEvent } from "../src/events.js";
 import { EXIT_REFUSED, gate } from "../src/gate.js";
+import type { Prompt } from "../src/prompt.js";
 import { fakePrompt, harness, STAGING_ENV } from "./support/harness.js";
 
 const STAGING = ["op", "read", "op://Staging/db/password"];
@@ -97,11 +101,57 @@ describe("gate: ask tier", () => {
     expect(prompt.asked).toHaveLength(2);
     expect(h.spawned).toHaveLength(2);
   });
+});
 
-  it("refuses on Deny, running nothing", () => {
-    const h = harness({ prompt: fakePrompt({ answer: "deny", via: "dialog", detail: null }) });
-    expect(gate({ command: PROD }, h.deps)).toEqual({ ran: false, code: EXIT_REFUSED });
-    expect(h.types().slice(-2)).toEqual(["answered", "refused"]);
-    expect(h.spawned).toEqual([]);
+/** One line per event, as spec/lifecycle.json's `trace` describes. */
+function trace(events: readonly GateEvent[]): string[] {
+  return events.map((e) => {
+    if (e.type === "tier-decided") return `tier-decided:${e.tier}`;
+    if (e.type === "answered") return `answered:${e.answer}`;
+    if (e.type === "allowed") return `allowed:${e.credentials}`;
+    return e.type;
+  });
+}
+
+const says = (answer: Answer): Prompt => fakePrompt({ answer, via: "dialog", detail: null });
+const PROMPTS: Readonly<Record<string, Prompt>> = {
+  ...Object.fromEntries(ANSWERS.map((a) => [a, says(a)])),
+  throws: {
+    unavailable: null,
+    ask() {
+      throw new Error("osascript: no window server");
+    },
+  },
+  unavailable: {
+    unavailable: "may-i asks only on macOS",
+    ask() {
+      throw new Error("never called");
+    },
+  },
+};
+
+interface Ending {
+  name: string;
+  command: string[];
+  prompt: string;
+  sequence: string[];
+  ran: boolean;
+  why?: string;
+}
+const endings: Ending[] = spec.endings;
+const config = { ...DEFAULT_CONFIG, user: spec.rules };
+
+describe("gate: every ending, as its exact event sequence", () => {
+  it.each(endings)("$name", (ending) => {
+    const prompt = PROMPTS[ending.prompt];
+    if (!prompt) throw new Error(`spec names an unknown prompt: ${ending.prompt}`);
+    const h = harness({ prompt, config });
+    const result = gate({ command: ending.command }, h.deps);
+    expect(trace(h.events)).toEqual(ending.sequence);
+    expect(result).toEqual(
+      ending.ran ? { ran: true, code: 0 } : { ran: false, code: EXIT_REFUSED },
+    );
+    expect(h.spawned).toHaveLength(ending.ran ? 1 : 0);
+    if (ending.why !== undefined) expect(h.events.at(-1)).toMatchObject({ why: ending.why });
   });
 });

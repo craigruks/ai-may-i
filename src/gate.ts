@@ -12,7 +12,7 @@ import { agentName } from "./agent.js";
 import { type Config, effectiveRules } from "./config.js";
 import { ANSWER_RUNS, type Emitter, type EventBody, type GateEvent } from "./events.js";
 import { decide } from "./policy.js";
-import type { Prompt, Question } from "./prompt.js";
+import type { Prompt, PromptAnswer, Question } from "./prompt.js";
 import { redactCommand, redactText } from "./redact.js";
 import { findReferences, type ReadText } from "./references.js";
 
@@ -53,6 +53,19 @@ export interface GateResult {
   ran: boolean;
   /** The command's own exit code when it ran; EXIT_REFUSED when it did not. */
   code: number;
+}
+
+/** A prompt that throws has not answered, and only an answer can approve. */
+function askSafely(prompt: Prompt, question: Question): PromptAnswer {
+  try {
+    return prompt.ask(question);
+  } catch (err) {
+    return {
+      answer: "error",
+      via: "prompt",
+      detail: err instanceof Error ? err.message : String(err),
+    };
+  }
 }
 
 /** One request's view of the event stream: stamps each event, and counts the
@@ -101,8 +114,9 @@ export function gate(request: GateRequest, deps: GateDeps): GateResult {
     // Shorter only: the agent writes the request, and the config is the person's.
     const timeoutSeconds = Math.min(request.timeoutSeconds ?? Infinity, config.timeoutSeconds);
     const question: Question = { ...who, ...found, id, timeoutSeconds };
+    if (deps.prompt.unavailable !== null) return refuse(`cannot ask: ${deps.prompt.unavailable}`);
     emit({ type: "asked", timeoutSeconds });
-    const answer = deps.prompt.ask(question);
+    const answer = askSafely(deps.prompt, question);
     emit({ type: "answered", ...answer });
     if (!ANSWER_RUNS[answer.answer]) return refuse(`not approved: ${answer.answer}`);
   }
