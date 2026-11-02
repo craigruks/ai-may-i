@@ -1,9 +1,16 @@
-/** Fakes for the gate, each typed to the interface it stands in for. */
+/**
+ * Fakes for the gate, each typed to the interface it stands in for, and the
+ * check that makes the tripwires run after every test. bunfig.toml preloads
+ * this file, so the `afterEach` below is global: any test whose gate emitted a
+ * stream that breaks an invariant fails, whatever that test set out to check.
+ */
 
+import { afterEach } from "bun:test";
 import { type Config, DEFAULT_CONFIG } from "../../src/config.js";
 import { createEmitter, type GateEvent } from "../../src/events.js";
 import type { Clock, GateDeps, Spawn } from "../../src/gate.js";
 import type { Prompt, PromptAnswer, Question } from "../../src/prompt.js";
+import { scan } from "../../src/tripwires.js";
 
 export const CONFIG: Config = {
   ...DEFAULT_CONFIG,
@@ -11,6 +18,15 @@ export const CONFIG: Config = {
 };
 
 export const STAGING_ENV = { OP_SERVICE_ACCOUNT_TOKEN: "staging-sa-token-kept-by-the-caller" };
+
+/** Each harness's stream during the current test, and the values none may hold. */
+const ledger = { streams: [] as GateEvent[][], secrets: new Set<string>() };
+
+afterEach(() => {
+  const trips = ledger.streams.flatMap((events) => scan(events, [...ledger.secrets]));
+  ledger.streams = [];
+  if (trips.length > 0) throw new Error(`tripwires: ${trips.join("; ")}`);
+});
 
 export const clock: Clock = { now: () => new Date("2026-10-31T09:00:00.000Z") };
 
@@ -45,6 +61,9 @@ export function harness(over: Partial<GateDeps> & { code?: number } = {}): Harne
   };
   const emitter = createEmitter();
   emitter.subscribe((e) => events.push(e));
+  ledger.streams.push(events);
+  let requests = 0;
+  for (const value of Object.values(over.env ?? STAGING_ENV)) if (value) ledger.secrets.add(value);
   const { code: _, ...deps } = over;
   return {
     deps: {
@@ -56,7 +75,7 @@ export function harness(over: Partial<GateDeps> & { code?: number } = {}): Harne
       spawn,
       events: emitter,
       clock,
-      newId: () => "r1",
+      newId: () => `r${++requests}`,
       ...deps,
     },
     events,

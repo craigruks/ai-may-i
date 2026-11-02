@@ -1,0 +1,3 @@
+[test]
+# Registers the tripwire check after every test; see the file's header.
+preload = ["./test/support/harness.ts"]

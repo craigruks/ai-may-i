@@ -15,6 +15,7 @@ import { decide } from "./policy.js";
 import type { Prompt, PromptAnswer, Question } from "./prompt.js";
 import { redactCommand, redactText } from "./redact.js";
 import { findReferences, type ReadText } from "./references.js";
+import { createTripwires, secretsIn, type Tripwires } from "./tripwires.js";
 
 type Env = Readonly<Record<string, string | undefined>>;
 
@@ -68,26 +69,48 @@ function askSafely(prompt: Prompt, question: Question): PromptAnswer {
   }
 }
 
-/** One request's view of the event stream: stamps each event, and counts the
- *  subscribers that failed to see one. */
-function stream(deps: GateDeps) {
+class Tripped extends Error {}
+
+/** One request's view of the event stream: stamps each event, holds it to the
+ *  tripwires before any subscriber sees it, and counts subscribers that fail. */
+function stream(deps: GateDeps, wires: Tripwires) {
   const id = deps.newId();
   let missed = 0;
-  const emit = (body: EventBody) => {
+  const deliver = (body: EventBody) => {
     const event: GateEvent = { ...body, id, at: deps.clock.now().toISOString() };
+    const trip = wires.check(event);
+    if (trip) throw new Tripped(trip);
     missed += deps.events.emit(event).length;
   };
   const refuse = (why: string): GateResult => {
-    emit({ type: "refused", why });
+    deliver({ type: "refused", why });
     return { ran: false, code: EXIT_REFUSED };
   };
-  return { id, emit, refuse, missed: () => missed };
+  return { id, emit: deliver, refuse, missed: () => missed };
 }
 
+/** Inline, a tripwire aborts the request where it stands. What was about to
+ *  happen does not: an event that tripped is never delivered, and a spawn that
+ *  tripped never starts. */
 export function gate(request: GateRequest, deps: GateDeps): GateResult {
+  const wires = createTripwires();
+  for (const s of secretsIn(deps.env)) wires.secret(s);
+  const s = stream(deps, wires);
+  try {
+    return run(request, deps, s);
+  } catch (err) {
+    if (!(err instanceof Tripped)) throw err;
+    return s.refuse(`tripwire: ${err.message}`);
+  }
+}
+
+function run(
+  request: GateRequest,
+  deps: GateDeps,
+  { id, emit, refuse, missed }: ReturnType<typeof stream>,
+): GateResult {
   const program = request.command[0];
   if (program === undefined) throw new TypeError("gate: the command is empty");
-  const { id, emit, refuse, missed } = stream(deps);
   const { config } = deps;
 
   const who = {
