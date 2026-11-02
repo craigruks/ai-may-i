@@ -12,6 +12,7 @@
  */
 
 import { dirname, join } from "node:path";
+import { type Observer, parseObservers } from "./observers.js";
 import { NO_RULES, type Rules } from "./policy.js";
 import { DEFAULT_FILE_FLAGS, type ReadText } from "./references.js";
 
@@ -21,6 +22,7 @@ export interface Config {
   timeoutSeconds: number;
   fileFlags: readonly string[];
   scanFiles: readonly string[];
+  observers: readonly Observer[];
 }
 
 /** Long enough to read the request, short enough that a forgotten prompt does
@@ -35,6 +37,7 @@ export const DEFAULT_CONFIG: Config = {
   timeoutSeconds: DEFAULT_TIMEOUT_SECONDS,
   fileFlags: DEFAULT_FILE_FLAGS,
   scanFiles: [],
+  observers: [],
 };
 
 export function effectiveRules(config: Config): Rules {
@@ -47,8 +50,11 @@ export function effectiveRules(config: Config): Rules {
 
 const LIST_KEYS = ["allow", "ask", "deny", "scanFiles", "fileFlags"] as const;
 type ListKey = (typeof LIST_KEYS)[number];
-type FileConfig = Partial<Record<ListKey, string[]>> & { timeoutSeconds?: number };
-const USER_ONLY: readonly ListKey[] = ["allow", "scanFiles", "fileFlags"];
+type FileConfig = Partial<Record<ListKey, string[]>> & {
+  timeoutSeconds?: number;
+  observers?: Observer[];
+};
+const USER_ONLY = ["allow", "scanFiles", "fileFlags", "observers"] as const;
 
 const isListKey = (key: string): key is ListKey => LIST_KEYS.some((k) => k === key);
 const isStringList = (v: unknown): v is string[] =>
@@ -62,6 +68,12 @@ function setField(out: FileConfig, key: string, value: unknown): string | null {
   if (key === "timeoutSeconds") {
     if (!isTimeout(value)) return `\`timeoutSeconds\` must be 1 to ${MAX_TIMEOUT_SECONDS}`;
     out.timeoutSeconds = value;
+    return null;
+  }
+  if (key === "observers") {
+    const observers = parseObservers(value);
+    if (typeof observers === "string") return observers;
+    out.observers = observers;
     return null;
   }
   if (!isListKey(key)) return `unknown key \`${key}\``;
@@ -147,6 +159,7 @@ export function loadConfig(input: LoadInput): { config: Config; warnings: string
     ),
     fileFlags: [...new Set([...DEFAULT_FILE_FLAGS, ...(user.fileFlags ?? [])])],
     scanFiles: user.scanFiles ?? [],
+    observers: user.observers ?? [],
   };
   return { config, warnings };
 }

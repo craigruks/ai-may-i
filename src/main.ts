@@ -8,6 +8,7 @@ import { constants, homedir } from "node:os";
 import { runCli } from "./cli.js";
 import { systemShell } from "./dialog.js";
 import { EXIT_REFUSED, type Spawn } from "./gate.js";
+import { systemRunner } from "./observers.js";
 import { fileSink } from "./receipts.js";
 
 const readText = (path: string): string | null => {
@@ -42,6 +43,7 @@ try {
     readText,
     shell: systemShell,
     spawn,
+    runObserver: systemRunner,
     sinkFor: fileSink,
     clock: { now: () => new Date() },
     newId: randomUUID,

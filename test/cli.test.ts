@@ -58,6 +58,7 @@ function cli(argv: string[], over: Partial<CliDeps> & { exit?: number } = {}): R
       out.spawned.push(command);
       return exit ?? 0;
     },
+    runObserver: () => null,
     sinkFor: () => sink,
     clock,
     newId: () => "r1",

@@ -35,7 +35,9 @@ export type EventBody =
   | { type: "allowed"; credentials: Credentials }
   | { type: "refused"; why: string }
   | { type: "spawned"; program: string }
-  | { type: "exited"; code: number };
+  | { type: "exited"; code: number }
+  // One of the user's observers failed. Recorded, and changes nothing.
+  | { type: "observer-failed"; observer: string; on: string; why: string };
 
 /** `id` is the request's, shared by every event it emits; `at` is ISO 8601. */
 export type GateEvent = EventBody & { id: string; at: string };
@@ -52,6 +54,7 @@ export const ENDS_REQUEST: Readonly<Record<EventType, boolean>> = {
   spawned: false,
   refused: true,
   exited: true,
+  "observer-failed": false,
 };
 
 export type Subscriber = (event: GateEvent) => void;

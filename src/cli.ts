@@ -11,6 +11,7 @@ import { type Clock, EXIT_REFUSED, gate, type Spawn } from "./gate.js";
 import { keychainToken } from "./keychain.js";
 import { formatLog, parseSince } from "./log.js";
 import { macPrompt } from "./notify.js";
+import { observe, type Runner } from "./observers.js";
 import type { Prompt } from "./prompt.js";
 import { parseReceipts, type ReceiptSink, receiptsPath, receiptWriter } from "./receipts.js";
 import type { ReadText } from "./references.js";
@@ -28,6 +29,7 @@ export interface CliDeps {
   /** Every macOS helper (osascript, alerter, security, logger) runs through this. */
   shell: MacShell;
   spawn: Spawn;
+  runObserver: Runner;
   sinkFor: (path: string) => ReceiptSink;
   clock: Clock;
   newId: () => string;
@@ -66,8 +68,10 @@ function runCommand(parsed: Extract<ReturnType<typeof parseArgs>, { kind: "run" 
   if (deps.platform === "darwin") {
     events.subscribe(reporting("the system log", systemLogWriter(loggerLog(deps.shell)), deps));
   }
+  events.subscribe(observe(config.observers, deps.runObserver, events));
   events.subscribe((e) => {
     if (e.type === "refused") deps.stderr(`may-i: refused: ${e.why}`);
+    if (e.type === "observer-failed") deps.stderr(`may-i: observer ${e.observer} failed: ${e.why}`);
   });
   const result = gate(
     {
