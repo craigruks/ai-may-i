@@ -152,6 +152,13 @@ describe("may-i", () => {
     expect(verifying(`${line}\ngarbage`).code).toBe(1);
   });
 
+  it("exits 1 from `doctor` when a check fails, one line per check", () => {
+    expect(cli(["doctor"], { platform: "linux" })).toMatchObject({
+      code: 1,
+      stdout: ["fail  may-i asks only on macOS, and this is linux"],
+    });
+  });
+
   it("reports a config warning, and still decides", () => {
     const readText = (p: string) => (p === USER_CONFIG ? "{" : null);
     const run = cli(["--", ...PROD], { readText });

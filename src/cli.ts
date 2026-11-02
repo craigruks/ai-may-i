@@ -6,6 +6,7 @@
 import { EXIT_USAGE, parseArgs, USAGE } from "./args.js";
 import { loadConfig } from "./config.js";
 import type { MacShell } from "./dialog.js";
+import { doctor } from "./doctor.js";
 import { createEmitter, type Subscriber } from "./events.js";
 import { type Clock, EXIT_REFUSED, gate, type Spawn } from "./gate.js";
 import { keychainToken } from "./keychain.js";
@@ -120,6 +121,21 @@ function runVerify(deps: CliDeps): number {
   return held ? 0 : 1;
 }
 
+function runDoctor(deps: CliDeps): number {
+  const receipts = receiptsPath(deps.env, deps.home);
+  const canWrite = (path: string) => {
+    try {
+      deps.sinkFor(path).open();
+      return null;
+    } catch (err) {
+      return err instanceof Error ? err.message : String(err);
+    }
+  };
+  const checks = doctor({ ...deps, receipts, canWrite });
+  for (const c of checks) deps.stdout(`${c.level.padEnd(4)}  ${c.says}`);
+  return checks.some((c) => c.level === "fail") ? 1 : 0;
+}
+
 export function runCli(deps: CliDeps): number {
   const parsed = parseArgs(deps.argv);
   switch (parsed.kind) {
@@ -138,5 +154,7 @@ export function runCli(deps: CliDeps): number {
       return showLog(parsed, deps);
     case "verify":
       return runVerify(deps);
+    case "doctor":
+      return runDoctor(deps);
   }
 }
