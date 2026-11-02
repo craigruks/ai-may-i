@@ -34,6 +34,10 @@ export default defineConfig({
           label: "Using may-i",
           items: ["how-it-works", "configuration", "task-runners", "claude-code-hook", "receipts"],
         },
+        {
+          label: "Guides",
+          items: ["guides/service-accounts"],
+        },
       ],
     }),
   ],

@@ -5,8 +5,7 @@ description: Build may-i, store the production token, write a config, and run a 
 
 This page sets up may-i on one Mac. You need the 1Password CLI (`op`), and two 1Password
 service accounts: one that reads your staging vault, one that reads your production
-vault. [1Password's docs](https://www.1password.dev/service-accounts/get-started/) show how
-to make them.
+vault. The [service accounts guide](/ai-may-i/guides/service-accounts/) shows how to make them.
 
 ## 1. Build and install
 
