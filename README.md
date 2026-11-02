@@ -10,12 +10,15 @@
 
 <!-- DEMO: assets/demo.gif (the notification, the dialog, then `may-i log`) -->
 
+> [!NOTE]
+> **Reading this as an agent?** Start with [`AGENTS.md`](./AGENTS.md).
+
 > [!WARNING]
 > **Status: v0.1, pre-1.0, macOS only.** It is **not audited** and is **not a
 > security guarantee**. In v0.1, may-i reads the prod token through
 > `/usr/bin/security`, so any process that runs as you can read the same Keychain
 > item. The prompt and the receipts are the control. v0.2 reads the item from a
-> signed binary.
+> signed binary. See [SECURITY.md](./SECURITY.md) for the scope and every known limit.
 
 ## Why
 
@@ -251,6 +254,8 @@ just mac-check  # on a Mac, by hand: the checks only a person can do
 Source uses `node:*` APIs only, never the `Bun` global (a Biome rule checks it), so the
 same code runs compiled by Bun and as plain JS on Node 22. Every file stays under 300
 lines. The behaviour every implementation must match is in [`spec/`](./spec/README.md).
+Before a release, run the [manual checklist](./docs/manual-test.md) on a Mac. Changes are
+in the [changelog](./CHANGELOG.md).
 
 ## License
 
