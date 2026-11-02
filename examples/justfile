@@ -1,0 +1,25 @@
+# Deploy recipes behind may-i. Which vault is which lives in your own
+# ~/.config/may-i/config.json, not in the repo:
+#
+#     { "allow": ["op://Staging/*"] }
+#
+# Staging references are allowed, so staging recipes run at once, with the
+# staging service-account token already in your environment. Everything else
+# asks, and only an Approve hands that one command the prod token.
+
+# Staging: allowed, so it runs straight away and is still recorded.
+deploy-staging:
+    may-i -- op run --env-file .env.staging -- ./deploy.sh staging
+
+# Prod: asks first. The reason is shown in the prompt and kept in the receipt.
+deploy-prod reason="ship main to production":
+    may-i --reason {{ quote(reason) }} -- op run --env-file .env.prod -- ./deploy.sh production
+
+# Any one-off command with prod credentials: `just prod ./scripts/backfill.sh --since 7d`.
+[positional-arguments]
+prod +cmd:
+    may-i --reason "just prod $*" -- op run --env-file .env.prod -- "$@"
+
+# The kind of recipe an agent adds: it needs prod credentials, so it starts with may-i.
+db-migrate-prod:
+    may-i --reason "apply pending database migrations to production" -- op run --env-file .env.prod -- ./scripts/migrate.sh

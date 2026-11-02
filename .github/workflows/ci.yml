@@ -28,6 +28,13 @@ jobs:
       - run: bun install --frozen-lockfile
       - run: just check
       - run: just build
+      - name: The examples still parse, and their env files hold only op:// references
+        working-directory: examples
+        run: |
+          for recipe in deploy-staging deploy-prod "prod ./scripts/backfill.sh" db-migrate-prod; do
+            just --dry-run $recipe
+          done
+          ! grep -vE '^(#.*|[A-Z_]+=op://[^ ]+)?$' .env.staging .env.prod
 
       - uses: actions/setup-node@v7
         with:
