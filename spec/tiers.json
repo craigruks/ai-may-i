@@ -81,5 +81,52 @@
       "references": ["op://Staging/db/password"],
       "tier": "ask"
     }
+  ],
+  "config": [
+    {
+      "name": "ignores a repo file's allow",
+      "repoFile": "{\"allow\":[\"op://*\"]}",
+      "reference": "op://Prod/db/password",
+      "tier": "ask"
+    },
+    {
+      "name": "lets a repo ask beat the user's allow",
+      "userFile": "{\"allow\":[\"op://Staging/*\"]}",
+      "repoFile": "{\"ask\":[\"op://Staging/signing/*\"]}",
+      "reference": "op://Staging/signing/key",
+      "tier": "ask"
+    },
+    {
+      "name": "keeps the user's allow outside the repo's ask",
+      "userFile": "{\"allow\":[\"op://Staging/*\"]}",
+      "repoFile": "{\"ask\":[\"op://Staging/signing/*\"]}",
+      "reference": "op://Staging/db/password",
+      "tier": "allow"
+    },
+    {
+      "name": "lets a repo deny tighten",
+      "userFile": "{\"allow\":[\"op://Staging/*\"]}",
+      "repoFile": "{\"deny\":[\"op://Staging/root/*\"]}",
+      "reference": "op://Staging/root/token",
+      "tier": "deny"
+    },
+    {
+      "name": "ignores a whole user file over one bad field",
+      "userFile": "{\"allow\":[\"op://Staging/*\"],\"deny\":\"op://Prod/*\"}",
+      "reference": "op://Staging/db/password",
+      "tier": "ask"
+    },
+    {
+      "name": "ignores a user file with an unknown key",
+      "userFile": "{\"allow\":[\"op://Staging/*\"],\"denyy\":[]}",
+      "reference": "op://Staging/db/password",
+      "tier": "ask"
+    },
+    {
+      "name": "asks for everything when the user file is not JSON",
+      "userFile": "{\"allow\": [\"op://Staging/*\"\"",
+      "reference": "op://Staging/db/password",
+      "tier": "ask"
+    }
   ]
 }
