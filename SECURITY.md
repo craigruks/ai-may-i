@@ -10,6 +10,11 @@ does not replace your own judgement when you click Approve.
 **The authors accept no liability for any loss or damages** arising from the use of this
 software. See the [LICENSE](./LICENSE) (MIT) for the full terms.
 
+How changes are checked, and the limits of that review, are in
+[website/src/content/docs/review.md](./website/src/content/docs/review.md). Each threat
+and the test that proves it is in the
+[coverage map](./website/src/content/docs/coverage-map.md).
+
 ## Scope
 
 may-i guards a command that an agent runs through `may-i` and that reaches 1Password
