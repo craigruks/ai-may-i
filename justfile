@@ -2,8 +2,8 @@
 default:
     @just --list
 
-# Lint, typecheck and test: what every commit has to pass.
-check: lint typecheck test
+# Lint, typecheck, limits and test: what every commit has to pass.
+check: lint typecheck limits test
 
 # Biome: format and lint rules, including no `Bun` global in src/.
 lint:
@@ -12,6 +12,11 @@ lint:
 # Strict tsc over src, tests and scripts. Emits nothing.
 typecheck:
     bunx tsc -p tsconfig.json
+
+# No runtime dependencies, and no file of 300 lines or more.
+limits:
+    bun scripts/check-deps.ts
+    bun scripts/check-size.ts
 
 # Run the tests. Pass a path through: `just test test/events.test.ts`.
 test *args:

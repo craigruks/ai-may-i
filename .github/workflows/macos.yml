@@ -1,0 +1,55 @@
+name: macOS
+
+# The only automated run of the real Mac path: osascript, alerter, security.
+# A macOS runner costs more than a Linux one, so it runs on main and on pull
+# requests that touch that path.
+on:
+  push:
+    branches: [main]
+  pull_request:
+    paths:
+      - src/applescript.ts
+      - src/dialog.ts
+      - src/keychain.ts
+      - src/notify.ts
+      - .github/workflows/macos.yml
+
+permissions:
+  contents: read
+
+concurrency:
+  group: macos-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  headless:
+    name: Refuse when nobody is there to click
+    runs-on: macos-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - uses: jdx/mise-action@v5
+      - uses: actions/cache@v6
+        with:
+          path: ~/.bun/install/cache
+          key: bun-${{ runner.os }}-${{ hashFiles('bun.lock') }}
+      - run: bun install --frozen-lockfile
+      - run: just build
+      - name: An ask-tier command with no one to answer exits 77 and runs nothing
+        run: |
+          set +e
+          ./bin/may-i --timeout 5 --reason "headless CI" -- sh -c 'touch ran' op://Prod/db/password
+          code=$?
+          set -e
+          echo "may-i exited $code"
+          test "$code" -eq 77
+          test ! -e ran
+          tail -n 1 "$HOME/.local/state/may-i/receipts.jsonl"
+          grep -q '"outcome":"refused"' "$HOME/.local/state/may-i/receipts.jsonl"
+      - name: doctor fails on a Mac with no Keychain item
+        run: |
+          set +e
+          ./bin/may-i doctor
+          code=$?
+          set -e
+          test "$code" -eq 1
