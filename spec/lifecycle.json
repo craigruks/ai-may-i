@@ -4,8 +4,10 @@
     "ask": [],
     "deny": ["op://Prod/root/*"]
   },
-  "trace": "One entry per event: its type, plus :tier on tier-decided, :answer on answered and :credentials on allowed.",
+  "trace": "One entry per event: its type, plus :tier on tier-decided, :answer on answered and :credentials on allowed (caller: the caller's own environment; keychain: the prod token).",
   "prompts": "approve, deny, timeout, closed and error are what the prompt answers; throws is a prompt that throws; unavailable is a prompt that cannot ask here, with the reason 'may-i asks only on macOS'.",
+  "keychain": "keychain: missing means the Keychain read fails with missingKeychain; otherwise it returns a token. keychainReads counts the reads.",
+  "missingKeychain": "no Keychain item for service ai-may-i, account op-service-account",
   "endings": [
     {
       "name": "allow tier: runs at once, unasked",
@@ -19,10 +21,11 @@
         "spawned",
         "exited"
       ],
-      "ran": true
+      "ran": true,
+      "keychainReads": 0
     },
     {
-      "name": "ask tier, Approve: runs",
+      "name": "ask tier, Approve: runs with the prod token",
       "command": ["op", "read", "op://Prod/db/password"],
       "prompt": "approve",
       "sequence": [
@@ -31,11 +34,12 @@
         "tier-decided:ask",
         "asked",
         "answered:approve",
-        "allowed:caller",
+        "allowed:keychain",
         "spawned",
         "exited"
       ],
-      "ran": true
+      "ran": true,
+      "keychainReads": 1
     },
     {
       "name": "deny tier: refused unasked",
@@ -43,6 +47,7 @@
       "prompt": "approve",
       "sequence": ["requested", "references-found", "tier-decided:deny", "refused"],
       "ran": false,
+      "keychainReads": 0,
       "why": "deny tier: op://Prod/root/token: deny op://Prod/root/*"
     },
     {
@@ -58,6 +63,7 @@
         "refused"
       ],
       "ran": false,
+      "keychainReads": 0,
       "why": "not approved: deny"
     },
     {
@@ -73,6 +79,7 @@
         "refused"
       ],
       "ran": false,
+      "keychainReads": 0,
       "why": "not approved: timeout"
     },
     {
@@ -88,6 +95,7 @@
         "refused"
       ],
       "ran": false,
+      "keychainReads": 0,
       "why": "not approved: closed"
     },
     {
@@ -103,6 +111,7 @@
         "refused"
       ],
       "ran": false,
+      "keychainReads": 0,
       "why": "not approved: error"
     },
     {
@@ -118,6 +127,7 @@
         "refused"
       ],
       "ran": false,
+      "keychainReads": 0,
       "why": "not approved: error"
     },
     {
@@ -126,7 +136,25 @@
       "prompt": "unavailable",
       "sequence": ["requested", "references-found", "tier-decided:ask", "refused"],
       "ran": false,
+      "keychainReads": 0,
       "why": "cannot ask: may-i asks only on macOS"
+    },
+    {
+      "name": "ask tier, Approve, but no Keychain item: refused",
+      "command": ["op", "read", "op://Prod/db/password"],
+      "prompt": "approve",
+      "keychain": "missing",
+      "sequence": [
+        "requested",
+        "references-found",
+        "tier-decided:ask",
+        "asked",
+        "answered:approve",
+        "refused"
+      ],
+      "ran": false,
+      "keychainReads": 1,
+      "why": "approved, but no Keychain item for service ai-may-i, account op-service-account"
     }
   ]
 }

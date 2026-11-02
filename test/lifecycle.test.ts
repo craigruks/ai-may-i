@@ -1,12 +1,13 @@
 // Proves each way a request can go, as the exact sequence of events it emits, and that
-// nothing runs unless that sequence reaches `allowed`. The endings live in spec/lifecycle.json.
+// nothing runs unless that sequence reaches `allowed`. Only an approved command gets the
+// prod token. The endings live in spec/lifecycle.json.
 import { describe, expect, it } from "bun:test";
 import spec from "../spec/lifecycle.json" with { type: "json" };
 import { DEFAULT_CONFIG } from "../src/config.js";
 import { ANSWERS, type Answer, type GateEvent } from "../src/events.js";
 import { EXIT_REFUSED, gate } from "../src/gate.js";
 import type { Prompt } from "../src/prompt.js";
-import { fakePrompt, harness, STAGING_ENV } from "./support/harness.js";
+import { fakeKeychain, fakePrompt, harness, PROD_TOKEN, STAGING_ENV } from "./support/harness.js";
 
 const STAGING = ["op", "read", "op://Staging/db/password"];
 const PROD = ["op", "read", "op://Prod/db/password"];
@@ -136,6 +137,8 @@ interface Ending {
   prompt: string;
   sequence: string[];
   ran: boolean;
+  keychain?: string;
+  keychainReads: number;
   why?: string;
 }
 const endings: Ending[] = spec.endings;
@@ -145,13 +148,34 @@ describe("gate: every ending, as its exact event sequence", () => {
   it.each(endings)("$name", (ending) => {
     const prompt = PROMPTS[ending.prompt];
     if (!prompt) throw new Error(`spec names an unknown prompt: ${ending.prompt}`);
-    const h = harness({ prompt, config });
+    const token = fakeKeychain(
+      ending.keychain === "missing" ? { ok: false, why: spec.missingKeychain } : undefined,
+    );
+    const h = harness({ prompt, config, token });
     const result = gate({ command: ending.command }, h.deps);
+    expect(token.reads).toBe(ending.keychainReads);
     expect(trace(h.events)).toEqual(ending.sequence);
     expect(result).toEqual(
       ending.ran ? { ran: true, code: 0 } : { ran: false, code: EXIT_REFUSED },
     );
     expect(h.spawned).toHaveLength(ending.ran ? 1 : 0);
     if (ending.why !== undefined) expect(h.events.at(-1)).toMatchObject({ why: ending.why });
+  });
+});
+
+describe("gate: the prod token", () => {
+  it("goes to the approved command's environment, in place of the caller's token", () => {
+    const h = harness({ env: { ...STAGING_ENV, PATH: "/usr/bin" } });
+    gate({ command: PROD }, h.deps);
+    expect(h.spawned[0]?.env).toEqual({ OP_SERVICE_ACCOUNT_TOKEN: PROD_TOKEN, PATH: "/usr/bin" });
+    expect(h.events).toContainEqual(
+      expect.objectContaining({ type: "allowed", credentials: "keychain" }),
+    );
+  });
+
+  it("appears in no event (the tripwires check every test for it as well)", () => {
+    const h = harness();
+    gate({ command: PROD }, h.deps);
+    expect(JSON.stringify(h.events)).not.toContain(PROD_TOKEN);
   });
 });

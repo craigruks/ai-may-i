@@ -10,7 +10,14 @@
 import { basename } from "node:path";
 import { agentName } from "./agent.js";
 import { type Config, effectiveRules } from "./config.js";
-import { ANSWER_RUNS, type Emitter, type EventBody, type GateEvent } from "./events.js";
+import {
+  ANSWER_RUNS,
+  type Credentials,
+  type Emitter,
+  type EventBody,
+  type GateEvent,
+} from "./events.js";
+import type { TokenSource } from "./keychain.js";
 import { decide } from "./policy.js";
 import type { Prompt, PromptAnswer, Question } from "./prompt.js";
 import { redactCommand, redactText } from "./redact.js";
@@ -44,6 +51,8 @@ export interface GateDeps {
   cwd: string;
   readText: ReadText;
   prompt: Prompt;
+  /** Where the prod token comes from. Read only after an Approve. */
+  token: TokenSource;
   spawn: Spawn;
   events: Emitter;
   clock: Clock;
@@ -86,7 +95,7 @@ function stream(deps: GateDeps, wires: Tripwires) {
     deliver({ type: "refused", why });
     return { ran: false, code: EXIT_REFUSED };
   };
-  return { id, emit: deliver, refuse, missed: () => missed };
+  return { id, emit: deliver, refuse, missed: () => missed, secret: wires.secret };
 }
 
 /** Inline, a tripwire aborts the request where it stands. What was about to
@@ -107,7 +116,7 @@ export function gate(request: GateRequest, deps: GateDeps): GateResult {
 function run(
   request: GateRequest,
   deps: GateDeps,
-  { id, emit, refuse, missed }: ReturnType<typeof stream>,
+  { id, emit, refuse, missed, secret }: ReturnType<typeof stream>,
 ): GateResult {
   const program = request.command[0];
   if (program === undefined) throw new TypeError("gate: the command is empty");
@@ -133,6 +142,9 @@ function run(
   emit({ type: "tier-decided", ...decision, userTier });
 
   if (decision.tier === "deny") return refuse(`deny tier: ${decision.why}`);
+  // The allow tier runs with exactly what its caller has: a staging token, at most.
+  let env = deps.env;
+  let credentials: Credentials = "caller";
   if (decision.tier === "ask") {
     // Shorter only: the agent writes the request, and the config is the person's.
     const timeoutSeconds = Math.min(request.timeoutSeconds ?? Infinity, config.timeoutSeconds);
@@ -142,13 +154,19 @@ function run(
     const answer = askSafely(deps.prompt, question);
     emit({ type: "answered", ...answer });
     if (!ANSWER_RUNS[answer.answer]) return refuse(`not approved: ${answer.answer}`);
+    const read = deps.token.read();
+    if (!read.ok) return refuse(`approved, but ${read.why}`);
+    // From here every event is checked for it, so it can only ever reach the child.
+    secret(read.token);
+    env = { ...deps.env, OP_SERVICE_ACCOUNT_TOKEN: read.token };
+    credentials = "keychain";
   }
 
-  emit({ type: "allowed", credentials: "caller" });
+  emit({ type: "allowed", credentials });
   // A subscriber that could not see the request is a record that does not exist.
   if (missed() > 0) return refuse(`${missed()} event subscriber(s) failed before the run`);
   emit({ type: "spawned", program: basename(program) });
-  const code = deps.spawn(request.command, deps.env);
+  const code = deps.spawn(request.command, env);
   emit({ type: "exited", code });
   return { ran: true, code };
 }

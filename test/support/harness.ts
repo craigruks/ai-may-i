@@ -9,6 +9,7 @@ import { afterEach } from "bun:test";
 import { type Config, DEFAULT_CONFIG } from "../../src/config.js";
 import { createEmitter, type GateEvent } from "../../src/events.js";
 import type { Clock, GateDeps, Spawn } from "../../src/gate.js";
+import type { TokenRead, TokenSource } from "../../src/keychain.js";
 import type { Prompt, PromptAnswer, Question } from "../../src/prompt.js";
 import { scan } from "../../src/tripwires.js";
 
@@ -19,8 +20,10 @@ export const CONFIG: Config = {
 
 export const STAGING_ENV = { OP_SERVICE_ACCOUNT_TOKEN: "staging-sa-token-kept-by-the-caller" };
 
+export const PROD_TOKEN = "prod-sa-token-from-the-keychain";
+
 /** Each harness's stream during the current test, and the values none may hold. */
-const ledger = { streams: [] as GateEvent[][], secrets: new Set<string>() };
+const ledger = { streams: [] as GateEvent[][], secrets: new Set<string>([PROD_TOKEN]) };
 
 afterEach(() => {
   const trips = ledger.streams.flatMap((events) => scan(events, [...ledger.secrets]));
@@ -43,6 +46,20 @@ export function fakePrompt(
       return answer;
     },
   };
+}
+
+/** A Keychain that counts its reads, so a test can prove when it was not read. */
+export function fakeKeychain(
+  read: TokenRead = { ok: true, token: PROD_TOKEN },
+): TokenSource & { reads: number } {
+  const keychain = {
+    reads: 0,
+    read() {
+      keychain.reads += 1;
+      return read;
+    },
+  };
+  return keychain;
 }
 
 export interface Harness {
@@ -72,6 +89,7 @@ export function harness(over: Partial<GateDeps> & { code?: number } = {}): Harne
       cwd: "/work/repo",
       readText: () => null,
       prompt: fakePrompt(),
+      token: fakeKeychain(),
       spawn,
       events: emitter,
       clock,
