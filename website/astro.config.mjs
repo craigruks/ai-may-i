@@ -40,7 +40,7 @@ export default defineConfig({
         },
         {
           label: "Reference",
-          items: ["objections"],
+          items: ["objections", "coverage-map"],
         },
       ],
     }),
