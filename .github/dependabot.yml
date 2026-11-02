@@ -1,0 +1,32 @@
+version: 2
+
+# One grouped pull request per area each week, never one per package. Both packages
+# use Bun lockfiles. The CLI has dev dependencies only, and the docs site ships to no
+# user, so neither needs a pull request per bump.
+updates:
+  - package-ecosystem: bun
+    directory: "/"
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      dev-dependencies:
+        patterns:
+          - "*"
+  - package-ecosystem: bun
+    directory: "/website"
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      website:
+        patterns:
+          - "*"
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+    groups:
+      github-actions:
+        patterns:
+          - "*"
