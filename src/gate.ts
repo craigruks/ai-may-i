@@ -10,8 +10,9 @@
 import { basename } from "node:path";
 import { agentName } from "./agent.js";
 import { type Config, effectiveRules } from "./config.js";
-import type { Emitter, EventBody, GateEvent } from "./events.js";
+import { ANSWER_RUNS, type Emitter, type EventBody, type GateEvent } from "./events.js";
 import { decide } from "./policy.js";
+import type { Prompt, Question } from "./prompt.js";
 import { redactCommand, redactText } from "./redact.js";
 import { findReferences, type ReadText } from "./references.js";
 
@@ -25,6 +26,8 @@ export interface GateRequest {
   command: readonly string[];
   agent?: string | undefined;
   reason?: string | undefined;
+  /** Shortens the config's timeout for this one request. */
+  timeoutSeconds?: number | undefined;
 }
 
 /** Runs the command to completion and returns its exit code. */
@@ -39,6 +42,7 @@ export interface GateDeps {
   env: Env;
   cwd: string;
   readText: ReadText;
+  prompt: Prompt;
   spawn: Spawn;
   events: Emitter;
   clock: Clock;
@@ -51,9 +55,9 @@ export interface GateResult {
   code: number;
 }
 
-export function gate(request: GateRequest, deps: GateDeps): GateResult {
-  const program = request.command[0];
-  if (program === undefined) throw new TypeError("gate: the command is empty");
+/** One request's view of the event stream: stamps each event, and counts the
+ *  subscribers that failed to see one. */
+function stream(deps: GateDeps) {
   const id = deps.newId();
   let missed = 0;
   const emit = (body: EventBody) => {
@@ -64,15 +68,22 @@ export function gate(request: GateRequest, deps: GateDeps): GateResult {
     emit({ type: "refused", why });
     return { ran: false, code: EXIT_REFUSED };
   };
+  return { id, emit, refuse, missed: () => missed };
+}
 
-  emit({
-    type: "requested",
+export function gate(request: GateRequest, deps: GateDeps): GateResult {
+  const program = request.command[0];
+  if (program === undefined) throw new TypeError("gate: the command is empty");
+  const { id, emit, refuse, missed } = stream(deps);
+  const { config } = deps;
+
+  const who = {
     agent: agentName(request.agent, deps.env),
     command: redactCommand(request.command),
     reason: request.reason ? redactText(request.reason) : null,
     cwd: deps.cwd,
-  });
-  const { config } = deps;
+  };
+  emit({ type: "requested", ...who });
   const found = findReferences(request.command, {
     cwd: deps.cwd,
     env: deps.env,
@@ -85,10 +96,20 @@ export function gate(request: GateRequest, deps: GateDeps): GateResult {
   const userTier = decide(found, config.user).tier;
   emit({ type: "tier-decided", ...decision, userTier });
 
-  if (decision.tier !== "allow") return refuse(`${decision.tier} tier, and nothing can ask yet`);
+  if (decision.tier === "deny") return refuse(`deny tier: ${decision.why}`);
+  if (decision.tier === "ask") {
+    // Shorter only: the agent writes the request, and the config is the person's.
+    const timeoutSeconds = Math.min(request.timeoutSeconds ?? Infinity, config.timeoutSeconds);
+    const question: Question = { ...who, ...found, id, timeoutSeconds };
+    emit({ type: "asked", timeoutSeconds });
+    const answer = deps.prompt.ask(question);
+    emit({ type: "answered", ...answer });
+    if (!ANSWER_RUNS[answer.answer]) return refuse(`not approved: ${answer.answer}`);
+  }
+
   emit({ type: "allowed", credentials: "caller" });
   // A subscriber that could not see the request is a record that does not exist.
-  if (missed > 0) return refuse(`${missed} event subscriber(s) failed before the run`);
+  if (missed() > 0) return refuse(`${missed()} event subscriber(s) failed before the run`);
   emit({ type: "spawned", program: basename(program) });
   const code = deps.spawn(request.command, deps.env);
   emit({ type: "exited", code });

@@ -2,7 +2,7 @@
 // nothing runs unless that sequence reaches `allowed`.
 import { describe, expect, it } from "bun:test";
 import { EXIT_REFUSED, gate } from "../src/gate.js";
-import { harness, STAGING_ENV } from "./support/harness.js";
+import { fakePrompt, harness, STAGING_ENV } from "./support/harness.js";
 
 const STAGING = ["op", "read", "op://Staging/db/password"];
 const PROD = ["op", "read", "op://Prod/db/password"];
@@ -51,11 +51,57 @@ describe("gate: allow tier", () => {
   });
 });
 
-describe("gate: until it can ask", () => {
-  it("refuses anything outside the allow tier, running nothing", () => {
-    const h = harness();
-    expect(gate({ command: PROD }, h.deps).code).toBe(EXIT_REFUSED);
-    expect(h.types()).toEqual(["requested", "references-found", "tier-decided", "refused"]);
+describe("gate: ask tier", () => {
+  it("asks, naming who, what, why and what it reaches, and runs only on Approve", () => {
+    const prompt = fakePrompt();
+    const h = harness({ prompt });
+    expect(gate({ command: PROD, agent: "codex-1", reason: "rotate the key" }, h.deps).ran).toBe(
+      true,
+    );
+    expect(h.types()).toEqual([
+      "requested",
+      "references-found",
+      "tier-decided",
+      "asked",
+      "answered",
+      "allowed",
+      "spawned",
+      "exited",
+    ]);
+    expect(prompt.asked).toEqual([
+      {
+        id: "r1",
+        agent: "codex-1",
+        command: "op read op://Prod/db/password",
+        reason: "rotate the key",
+        references: ["op://Prod/db/password"],
+        unreadable: [],
+        cwd: "/work/repo",
+        timeoutSeconds: 120,
+      },
+    ]);
+  });
+
+  it("lets a request shorten the wait, never lengthen it", () => {
+    const prompt = fakePrompt();
+    gate({ command: PROD, timeoutSeconds: 30 }, harness({ prompt }).deps);
+    gate({ command: PROD, timeoutSeconds: 600 }, harness({ prompt }).deps);
+    expect(prompt.asked.map((q) => q.timeoutSeconds)).toEqual([30, 120]);
+  });
+
+  it("asks again for every request: one Approve is one run", () => {
+    const prompt = fakePrompt();
+    const h = harness({ prompt });
+    gate({ command: PROD }, h.deps);
+    gate({ command: PROD }, h.deps);
+    expect(prompt.asked).toHaveLength(2);
+    expect(h.spawned).toHaveLength(2);
+  });
+
+  it("refuses on Deny, running nothing", () => {
+    const h = harness({ prompt: fakePrompt({ answer: "deny", via: "dialog", detail: null }) });
+    expect(gate({ command: PROD }, h.deps)).toEqual({ ran: false, code: EXIT_REFUSED });
+    expect(h.types().slice(-2)).toEqual(["answered", "refused"]);
     expect(h.spawned).toEqual([]);
   });
 });
