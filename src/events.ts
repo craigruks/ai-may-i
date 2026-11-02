@@ -53,3 +53,52 @@ export const ENDS_REQUEST: Readonly<Record<EventType, boolean>> = {
   refused: true,
   exited: true,
 };
+
+export type Subscriber = (event: GateEvent) => void;
+
+export interface SubscriberFailure {
+  event: GateEvent;
+  error: unknown;
+}
+
+export interface Emitter {
+  subscribe(subscriber: Subscriber): void;
+  /** Delivers to every subscriber before it returns, and returns what threw. */
+  emit(event: GateEvent): readonly SubscriberFailure[];
+}
+
+/**
+ * Synchronous on purpose: when `emit` returns, every subscriber has seen the
+ * event, so the gate can act on a failure before it spawns anything.
+ *
+ * An event emitted from inside a subscriber is queued behind the one in
+ * flight rather than delivered on the spot, so every subscriber sees the same
+ * order. Its failures are returned by the outer `emit`.
+ */
+export function createEmitter(): Emitter {
+  const subscribers: Subscriber[] = [];
+  const queue: GateEvent[] = [];
+  let delivering = false;
+  return {
+    subscribe(subscriber) {
+      subscribers.push(subscriber);
+    },
+    emit(event) {
+      queue.push(event);
+      if (delivering) return [];
+      delivering = true;
+      const failures: SubscriberFailure[] = [];
+      for (let next = queue.shift(); next !== undefined; next = queue.shift()) {
+        for (const subscriber of subscribers) {
+          try {
+            subscriber(next);
+          } catch (error) {
+            failures.push({ event: next, error });
+          }
+        }
+      }
+      delivering = false;
+      return failures;
+    },
+  };
+}
