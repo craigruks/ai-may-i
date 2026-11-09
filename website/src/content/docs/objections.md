@@ -11,8 +11,6 @@ answer rests on.
 Touch ID is great, but it gives too much access, because there's no way to limit it to a
 single item in a vault.
 
-**The facts behind it:**
-
 - What 1Password's prompt for a terminal session says, and that it does not say which
   agent, which command or which credential.
 - What one Touch ID approval unlocks: the whole account, for the session.
@@ -28,8 +26,6 @@ Yes, an agent can get around the hook, by hiding `op` in a script or a variable.
 can also get around the prod token in Keychain: anything running as you can read it. So today
 the real control is the prompt and the receipts. In v0.2 a signed binary reads the prod token,
 and that's the thing an agent can't get around.
-
-**The facts behind it:**
 
 - The hook cannot see `op` behind a variable, inside a script file, or fed to a shell
   on stdin. Each is a known-limit row in
@@ -49,8 +45,6 @@ and other cloud services for the staging credentials.
 may-i hands the prod token only to the command you approved. A tripwire checks that it never
 appears in an event, a receipt or the system log.
 
-**The facts behind it:**
-
 - The other options: the prod token in every agent's environment, or no prod access for
   agents at all.
 - may-i reads the token only after an Approve, and not at all on any other ending
@@ -67,8 +61,6 @@ I chose TypeScript because I didn't want to deal with compilation, and my codeba
 TypeScript, so it made an easier first version. A Rust version is coming, or I may move to
 Rust entirely, so it's easier for other people to pick up.
 
-**The facts behind it:**
-
 - v0.1 is TypeScript with zero runtime dependencies, under 300 lines a file, and runs
   compiled by Bun or as plain JS on Node 22.
 - v0.2 moves to Rust to read the Keychain item in-process with `SecItemCopyMatching`, from
@@ -82,8 +74,6 @@ Honestly, to avoid the upkeep. In a lot of cases you're better off reading this 
 rolling your own inside yours. Think of it as a guide for your AI as much as something you
 drop in.
 
-**The facts behind it:**
-
 - v0.1 installs from a checkout with `just install`, and you can read every line first.
 - npm and Homebrew are not in v0.1.
 
@@ -91,8 +81,6 @@ drop in.
 
 It's what I work on. Happy to add support if people want it. I've been eyeing Omarchy, so
 Linux support may come if I move over.
-
-**The facts behind it:**
 
 - The prompt is a macOS notification and dialog, run through `/usr/bin/osascript` and
   `alerter`.
@@ -104,8 +92,6 @@ Linux support may come if I move over.
 ## Is this audited?
 
 No. Nobody has audited it yet. If you'd like to, I'd welcome it.
-
-**The facts behind it:**
 
 - No third party has reviewed it.
 - What runs on every commit: `just check` (Biome, strict `tsc`, file limits, every test,
