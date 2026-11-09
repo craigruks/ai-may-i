@@ -5,6 +5,12 @@ minor version can change behaviour.
 
 ## [Unreleased]
 
+### Added
+
+- `examples/check-env-files.ts`: holds each recipe's env file to the secrets its script
+  reads, so an approval lists only the fields that command uses. Runs in pre-commit and CI.
+  The examples now give each recipe a file of its own.
+
 ## 0.1.0 (2026-11-09)
 
 ### Added

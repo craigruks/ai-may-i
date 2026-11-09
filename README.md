@@ -90,7 +90,7 @@ Put `may-i --` in front of the command:
 
 ```sh
 may-i -- op read op://Staging/postgres/url
-may-i --reason "ship main to production" -- op run --env-file .env.prod -- ./deploy.sh production
+may-i --reason "ship main to production" -- op run --env-file .env.deploy-prod -- ./deploy.sh production
 ```
 
 may-i finds the `op://` references the command can reach: in its arguments (inside a
@@ -110,16 +110,14 @@ With no config at all, everything asks.
 The dialog leads with the command:
 
 ```text
-op run --env-file .env.prod -- ./deploy.sh production
+op run --env-file .env.deploy-prod -- ./deploy.sh production
 
 Asked by claude-code:bc3851a2
 In shop
 The agent says: "ship main to production"
 
-Reaches 3 1Password references:
+Reaches 1 1Password reference:
   - op://Prod/cloudflare/api-token
-  - op://Prod/postgres/url
-  - op://Prod/stripe/secret-key
 
 Approve gives this one command the production token.
 ```
@@ -200,26 +198,21 @@ A recipe that starts with `may-i` gates every run of it, whoever runs it. With j
 
 ```just
 deploy-prod reason="ship main to production":
-    may-i --reason {{ quote(reason) }} -- op run --env-file .env.prod -- ./deploy.sh production
+    may-i --reason {{ quote(reason) }} -- op run --env-file .env.deploy-prod -- ./deploy.sh production
 ```
 
 With make:
 
 ```make
 deploy-prod:
-	may-i --reason "ship main to production" -- op run --env-file .env.prod -- ./deploy.sh production
+	may-i --reason "ship main to production" -- op run --env-file .env.deploy-prod -- ./deploy.sh production
 ```
 
-With a shell alias:
-
-```sh
-alias prod='may-i -- op run --env-file .env.prod --'
-prod ./scripts/backfill.sh --since 7d
-```
-
-The `.env` files contain `op://` references only, never values
-([`examples/.env.prod`](./examples/.env.prod)). Tell your agents the same thing in their
-AGENTS.md: [`examples/AGENTS.snippet.md`](./examples/AGENTS.snippet.md).
+Each recipe gets an env file of its own, with `op://` references only, naming only what
+its script reads ([`examples/.env.deploy-prod`](./examples/.env.deploy-prod)).
+[`examples/check-env-files.ts`](./examples/check-env-files.ts) enforces that in pre-commit
+and CI. Tell your agents the same thing in their AGENTS.md:
+[`examples/AGENTS.snippet.md`](./examples/AGENTS.snippet.md).
 
 ## The Claude Code hook
 
@@ -256,7 +249,7 @@ copy to the system log with `logger -t may-i`, which Console.app shows.
 ```text
 $ may-i log --since 1h
 2026-11-02 09:14  codex-1               allowed, exit 0              op read op://Staging/postgres/url
-2026-11-02 09:14  claude-code:bc3851a2  approved, exit 0             op run --env-file .env.prod -- ./deploy.sh production
+2026-11-02 09:14  claude-code:bc3851a2  approved, exit 0             op run --env-file .env.deploy-prod -- ./deploy.sh production
 2026-11-02 09:14  codex-1               refused: not approved: deny  op read op://Prod/stripe/secret-key
 ```
 

@@ -66,6 +66,7 @@ so any test whose events break a rule fails, whatever it set out to check.
 | --- | --- | --- | --- |
 | A mistyped option becomes the program to run | `--` is required | [`test/args.test.ts`](https://github.com/craigruks/ai-may-i/blob/main/test/args.test.ts) "rejects %j"; [`test/cli.test.ts`](https://github.com/craigruks/ai-may-i/blob/main/test/cli.test.ts) "exits 64 on %j, running nothing" | none |
 | Claude Code runs `op` without may-i | `may-i-hook` blocks or wraps it | [`test/hook.test.ts`](https://github.com/craigruks/ai-may-i/blob/main/test/hook.test.ts); [`test/hook-lex.test.ts`](https://github.com/craigruks/ai-may-i/blob/main/test/hook-lex.test.ts) | `spec/hook-lex.json`: every row with `caught: true` |
+| An approval lists fields the command never reads | Each recipe's own env file, held to its script's reads in pre-commit and CI by [`examples/check-env-files.ts`](https://github.com/craigruks/ai-may-i/blob/main/examples/check-env-files.ts) | [`test/check-env-files.test.ts`](https://github.com/craigruks/ai-may-i/blob/main/test/check-env-files.test.ts) | none |
 
 ## Not covered
 

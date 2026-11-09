@@ -1,0 +1,4 @@
+#!/bin/sh
+# Copy to .githooks/pre-commit, then run: git config core.hooksPath .githooks
+# Refuses a commit whose approvals would list fields their commands never read.
+exec just check-env-files

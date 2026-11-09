@@ -36,7 +36,7 @@ export default defineConfig({
         },
         {
           label: "Guides",
-          items: ["guides/service-accounts"],
+          items: ["guides/service-accounts", "guides/name-only-the-fields"],
         },
         {
           label: "Reference",

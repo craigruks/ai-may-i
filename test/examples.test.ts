@@ -13,8 +13,9 @@ const rules = { allow: ["op://Staging/*"], ask: [], deny: [] };
 
 describe("examples", () => {
   it.each<[string, Tier]>([
-    [".env.staging", "allow"],
-    [".env.prod", "ask"],
+    [".env.deploy-staging", "allow"],
+    [".env.deploy-prod", "ask"],
+    [".env.db-migrate-prod", "ask"],
   ])("op run --env-file %s is %s", (file, tier) => {
     const sources = { cwd: dir, env: {}, readText, fileFlags: DEFAULT_FILE_FLAGS, scanFiles: [] };
     const found = findReferences(["op", "run", "--env-file", file, "--", "./deploy.sh"], sources);
