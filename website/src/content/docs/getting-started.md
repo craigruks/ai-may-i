@@ -13,10 +13,13 @@ v0.1 is not on npm or Homebrew. Build it from source:
 
 ```sh
 git clone https://github.com/craigruks/ai-may-i.git && cd ai-may-i
-mise install    # bun and just, at the versions in mise.toml
-bun install     # dev tooling only: may-i has no runtime dependencies
-just install    # builds bin/may-i and bin/may-i-hook, links both into ~/.local/bin
+mise install                # bun and just, at the versions in mise.toml
+mise exec -- bun install    # dev tooling only: may-i has no runtime dependencies
+mise exec -- just install   # builds bin/may-i and bin/may-i-hook, links both into ~/.local/bin
 ```
+
+`mise exec --` runs each step with the pinned bun and just, so it works whether or not your
+shell activates mise. If it does, plain `bun install` and `just install` work too.
 
 `just install` links into `~/.local/bin` unless you give it another directory:
 `just install /usr/local/bin`. That directory must be on your PATH.

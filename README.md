@@ -34,10 +34,13 @@ v0.1 is not on npm or Homebrew. Build it from source on a Mac:
 
 ```sh
 git clone https://github.com/craigruks/ai-may-i.git && cd ai-may-i
-mise install    # bun and just, at the versions in mise.toml
-bun install     # dev tooling only: may-i has no runtime dependencies
-just install    # builds bin/may-i and bin/may-i-hook, links both into ~/.local/bin
+mise install                # bun and just, at the versions in mise.toml
+mise exec -- bun install    # dev tooling only: may-i has no runtime dependencies
+mise exec -- just install   # builds bin/may-i and bin/may-i-hook, links both into ~/.local/bin
 ```
+
+`mise exec --` runs each step with the pinned bun and just, so it works whether or not your
+shell activates mise. If it does, plain `bun install` and `just install` work too.
 
 `just install` takes another directory as its one argument: `just install /usr/local/bin`.
 `just build` also writes ESM with types to `dist/`, which runs on Node 22 or later.
@@ -246,7 +249,7 @@ Each principle below has a check in the code or the tests.
 ## Development
 
 ```sh
-mise install    # bun and just
+mise install    # bun and just; the lines below assume your shell activates mise
 bun install
 just            # lists every recipe
 just check      # lint, typecheck, limits and tests: what every commit passes
