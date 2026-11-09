@@ -262,17 +262,16 @@ $ may-i log --since 1h
 
 ## Design principles
 
-<!-- VOICE: brief 4 (design principles intro, and one or two sentences per principle) -->
 Each principle below has a check in the code or the tests.
 
 | Principle | Where it is checked |
 | --- | --- |
-| Fails closed: anything but an Approve runs nothing. | `ANSWER_RUNS` in [`src/events.ts`](./src/events.ts); every ending in [`spec/lifecycle.json`](./spec/lifecycle.json) |
-| Reads `op://` references, never values. The one exception is the prod token, which goes to the approved command only. | [`src/tripwires.ts`](./src/tripwires.ts), run after every test by [`test/support/harness.ts`](./test/support/harness.ts) |
-| One approval, one command. | "asks again for every request" in [`test/lifecycle.test.ts`](./test/lifecycle.test.ts) |
-| A repo file can only tighten. | `config` cases in [`spec/tiers.json`](./spec/tiers.json); the tier tripwire |
-| Observers watch, never decide. | [`test/observers.test.ts`](./test/observers.test.ts) |
-| Zero runtime dependencies. | [`scripts/check-deps.ts`](./scripts/check-deps.ts), in `just check` |
+| **Fails closed.** Anything but an Approve, nothing runs. | `ANSWER_RUNS` in [`src/events.ts`](./src/events.ts); every ending in [`spec/lifecycle.json`](./spec/lifecycle.json) |
+| **Never sees your secrets.** It reads `op://` references, never values. The one exception is the prod token: it goes only to the command you approved, and a tripwire makes sure it never shows up in a log. | [`src/tripwires.ts`](./src/tripwires.ts), run after every test by [`test/support/harness.ts`](./test/support/harness.ts) |
+| **One approval, one command.** No sessions. No "approve for 10 minutes". | "asks again for every request" in [`test/lifecycle.test.ts`](./test/lifecycle.test.ts) |
+| **A repo can only make it stricter.** The agent can write to the repo, so the repo can't loosen anything. | `config` cases in [`spec/tiers.json`](./spec/tiers.json); the tier tripwire |
+| **Hooks watch, they never decide.** An observer can ping your phone. It can't approve. | [`test/observers.test.ts`](./test/observers.test.ts) |
+| **Zero runtime dependencies.** You can read all of it in an afternoon. | [`scripts/check-deps.ts`](./scripts/check-deps.ts), in `just check` |
 
 ## Development
 

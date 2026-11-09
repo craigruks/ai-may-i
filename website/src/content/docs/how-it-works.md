@@ -3,7 +3,11 @@ title: How it works
 description: Every request as a sequence of typed events, and everything that reads them.
 ---
 
-<!-- VOICE: brief 3 (how it works intro) -->
+I really like the event-based design, because it makes it easier to log and find bugs over
+time. Especially now, with AI: the more you can give it in file form, the better, because it
+can look through for patterns and find issues. You can hook into the events yourself, or hand
+the receipts to whoever needs them, like your employer.
+
 Each request is a sequence of events, and every other part of may-i reads those events.
 
 ## The events

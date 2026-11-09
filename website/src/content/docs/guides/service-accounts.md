@@ -5,8 +5,21 @@ sidebar:
   label: Service accounts
 ---
 
-<!-- VOICE: brief 5 (service accounts intro) -->
-This guide sets up the split may-i is built for: a staging service account in your agents' environment, and a production one in a Keychain item.
+Honestly, it's all one 1Password account. You create a service account scoped to your
+production vault, and its token is what goes into Keychain. For staging, you create a separate
+service account for the staging vault, and its token goes in an environment variable, which
+gives your agents access. I keep it out of git, in a `mise.local.toml` file.
+
+The key bit here is that a service account can't reach other vaults. We can restrict it to at
+least that granularity.
+
+If you export the prod token as a local environment variable, you're defeating the whole
+purpose of this, because that hands it to every agent. Setting it as an environment variable in
+the cloud is a different situation, and it depends on what you put in front of it, but that's a
+separate topic.
+
+This guide sets up that split: a staging service account in your agents' environment, and a
+production one in a Keychain item.
 
 1Password's side of each step is in its own docs:
 [Get started with 1Password Service Accounts](https://www.1password.dev/service-accounts/get-started/).

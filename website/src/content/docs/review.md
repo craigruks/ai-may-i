@@ -7,7 +7,11 @@ may-i is **not audited** and is **not a security guarantee** (see
 [SECURITY.md](https://github.com/craigruks/ai-may-i/blob/main/SECURITY.md)). This page
 lists how changes are checked, so the process and its limits are in the open.
 
-<!-- VOICE: brief 7 (review methodology intro) -->
+I think of it like bumper lanes in bowling. The first thing I try to break is the one rule that
+matters: can it run a command without an Approve? Then: can the token leak into a log? Every
+finding becomes a failing test first, so I know the test can actually catch it, then the fix.
+The [coverage map](/ai-may-i/coverage-map/) ties each threat to the test that pins it.
+
 Every change is checked by the same commands, listed below, and a change to the Mac path also gets a check by hand.
 
 ## What this is not
