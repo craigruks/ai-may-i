@@ -28,13 +28,14 @@ jobs:
       - run: bun install --frozen-lockfile
       - run: just check
       - run: just build
-      - name: The examples still parse, and their env files hold only op:// references
+      # Every recipe, read from the justfile itself, so a renamed one cannot drift from CI.
+      - name: The examples still parse, and each env file names only what its script reads
         working-directory: examples
         run: |
-          for recipe in deploy-staging deploy-prod "prod ./scripts/backfill.sh" db-migrate-prod; do
-            just --dry-run $recipe
+          for recipe in $(just --summary); do
+            just --dry-run "$recipe"
           done
-          ! grep -vE '^(#.*|[A-Z_]+=op://[^ ]+)?$' .env.staging .env.prod
+          bun check-env-files.ts
 
       - uses: actions/setup-node@v7
         with:
