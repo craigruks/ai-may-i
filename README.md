@@ -32,6 +32,30 @@ which `op://` references it will use. Then Deny or Approve.
 > item. The prompt and the receipts are the control. v0.2 reads the item from a
 > signed binary. See [SECURITY.md](./SECURITY.md) for the scope and every known limit.
 
+## TL;DR
+
+1. **Install it** (macOS). It links `may-i` into `~/.local/bin`, which must be on your PATH:
+   ```sh
+   git clone https://github.com/craigruks/ai-may-i.git && cd ai-may-i
+   mise install && mise exec -- bun install && mise exec -- just install
+   ```
+2. **Make two 1Password service accounts**, one per vault. Staging's token goes in your
+   environment; prod's goes in Keychain, where only may-i reads it:
+   [Service accounts](https://craigruks.github.io/ai-may-i/guides/service-accounts/).
+   ```sh
+   security add-generic-password -s ai-may-i -a op-service-account -w   # paste the prod token
+   ```
+3. **Allow staging** in `~/.config/may-i/config.json`. Everything else asks:
+   ```json
+   { "allow": ["op://Staging/*"] }
+   ```
+4. **Start every prod command with `may-i --`**, each with an env file of its own that
+   names only what it reads: [Scope each command](https://craigruks.github.io/ai-may-i/guides/scope-each-command/).
+   ```sh
+   may-i -- op run --env-file .env.deploy-prod -- ./deploy.sh production
+   ```
+5. **Check the Mac** with `may-i doctor`, and you're good to go.
+
 ## Why
 
 I use may-i by default for any local agent work in my repos. When I want many agents running

@@ -9,6 +9,32 @@ This page sets up may-i on one Mac. You need the 1Password CLI (`op`), and two 1
 service accounts: one that reads your staging vault, one that reads your production
 vault. The [service accounts guide](/ai-may-i/guides/service-accounts/) shows how to make them.
 
+## TL;DR
+
+1. **Install it** (macOS). It links `may-i` into `~/.local/bin`, which must be on your PATH:
+   ```sh
+   git clone https://github.com/craigruks/ai-may-i.git && cd ai-may-i
+   mise install && mise exec -- bun install && mise exec -- just install
+   ```
+2. **Make two 1Password service accounts**, one per vault. Staging's token goes in your
+   environment; prod's goes in Keychain, where only may-i reads it:
+   [Service accounts](/ai-may-i/guides/service-accounts/).
+   ```sh
+   security add-generic-password -s ai-may-i -a op-service-account -w   # paste the prod token
+   ```
+3. **Allow staging** in `~/.config/may-i/config.json`. Everything else asks:
+   ```json
+   { "allow": ["op://Staging/*"] }
+   ```
+4. **Start every prod command with `may-i --`**, each with an env file of its own that
+   names only what it reads: [Scope each command](/ai-may-i/guides/scope-each-command/).
+   ```sh
+   may-i -- op run --env-file .env.deploy-prod -- ./deploy.sh production
+   ```
+5. **Check the Mac** with `may-i doctor`, and you're good to go.
+
+The rest of this page is the same, step by step.
+
 ## 1. Build and install
 
 v0.1 is not on npm or Homebrew. Build it from source:
