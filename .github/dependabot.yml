@@ -9,6 +9,11 @@ updates:
     schedule:
       interval: weekly
     open-pull-requests-limit: 5
+    # may-i supports Node 22 and later. Newer @types/node would type-check calls that
+    # crash on Node 22, so it stays on the major the engines field names.
+    ignore:
+      - dependency-name: "@types/node"
+        update-types: ["version-update:semver-major"]
     groups:
       dev-dependencies:
         patterns:
