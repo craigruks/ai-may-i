@@ -5,8 +5,7 @@
 [![CI](https://github.com/craigruks/ai-may-i/actions/workflows/ci.yml/badge.svg)](https://github.com/craigruks/ai-may-i/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](./LICENSE)
 
-Documentation: [`website/`](./website/src/content/docs/index.mdx), published at
-https://craigruks.github.io/ai-may-i/ once the repo is public.
+Documentation: https://craigruks.github.io/ai-may-i/
 
 `may-i` puts two screens in front of your 1Password credentials, so before an agent gets them,
 you know what's asking and why.
@@ -104,10 +103,8 @@ reference a tier from your config and acts on the strictest:
 | `ask` | Shows a notification, then a dialog. Only Approve runs the command, and only that run gets the prod token. |
 | `deny` | Refuses without asking. |
 
-A reference that no rule matches is `ask`. A command with no readable reference is `ask`.
-With no config at all, everything asks.
-
-The dialog leads with the command:
+A reference that no rule matches is `ask`. With no config at all, everything asks. The
+dialog leads with the command, and has no default button:
 
 ```text
 op run --env-file .env.deploy-prod -- ./deploy.sh production
@@ -122,136 +119,23 @@ Reaches 1 1Password reference:
 Approve gives this one command the production token.
 ```
 
-The dialog has Deny and Approve and no default button, so Return and Escape do nothing.
-It gives up after the timeout, and a timeout refuses.
+Every option, command and exit code: [the command line](https://craigruks.github.io/ai-may-i/cli/).
 
-### Options
+## Name only the fields a command uses
 
-| Option | Meaning |
-| --- | --- |
-| `--agent <id>` | Who is asking. Default: `$MAY_I_AGENT`, then `claude-code:<session>` inside Claude Code, else `a local shell`. A label, not proof of identity. |
-| `--reason <text>` | Why, in the agent's words. Shown in the prompt as the agent's claim, and kept in the receipt. |
-| `--timeout <s>` | Wait less than the config's timeout, 1 to 600 seconds. It can only shorten. |
-| `-h`, `--help` | Print the usage. |
-| `-v`, `--version` | Print the version. |
+may-i shows every reference it is handed, so give each recipe an env file of its own,
+naming only what its script reads. Then the dialog above lists exactly those fields.
+[`examples/`](./examples) follows the rule, and
+[`examples/check-env-files.ts`](./examples/check-env-files.ts) enforces it in pre-commit
+and CI: [the guide](https://craigruks.github.io/ai-may-i/guides/name-only-the-fields/).
 
-`--` is required before the command, so a mistyped option can never become the program
-to run. These options also take the `--agent=<id>` form.
+## More
 
-### Commands
-
-| Command | What it does |
-| --- | --- |
-| `may-i log [--agent <id>] [--since <30m\|12h\|7d\|date>]` | One line per request from the receipts: when (UTC), who, how it ended, the command. |
-| `may-i verify` | Checks every receipt again from its own events, and exits 1 on any problem. |
-| `may-i doctor` | Checks the Keychain item, the receipts file and `alerter`. |
-
-### Exit codes
-
-| Code | When |
-| --- | --- |
-| the command's own | The command ran. |
-| 77 | may-i refused: deny tier, Deny, timeout, a closed notification, an error, no display, no Keychain item, a receipt it could not write, a tripwire, or a failure in may-i itself. |
-| 64 | Misuse: an unknown option, a bad value, no `--` before the command, or a `--since` that `may-i log` cannot read. |
-| 127 | The approved command could not start. |
-| 128 + n | The command was killed by signal n. |
-| 1 | `may-i verify` found a problem or a line that is not a receipt, or `may-i doctor` found a failing check. |
-
-## Configuration
-
-Your config is `~/.config/may-i/config.json` (`$XDG_CONFIG_HOME/may-i/config.json` when
-that is set). It decides which vault is which:
-
-```json
-{
-  "allow": ["op://Staging/*"],
-  "deny": ["op://Prod/root/*"],
-  "timeoutSeconds": 120
-}
-```
-
-`*` matches any run of characters, `/` included, and a pattern must match the whole
-reference. `deny` and `ask` patterns ignore case. `allow` patterns match the exact case, so
-a spelling mismatch can only make a decision stricter.
-
-A repo can add `.may-i.json`: may-i reads the one in the working directory or its nearest
-parent. A repo file can only tighten, because the agent you gate can usually write to the
-repo.
-
-| Key | Value | In a repo file | Meaning |
-| --- | --- | --- | --- |
-| `allow` | patterns | ignored, with a warning | Run at once, with your environment. |
-| `ask` | patterns | added to yours | Ask first. Only Approve runs, with the prod token. |
-| `deny` | patterns | added to yours | Refuse without asking. |
-| `timeoutSeconds` | 1 to 600, default 120 | can only shorten | How long the prompt waits. Silence refuses. |
-| `scanFiles` | paths, relative to the working directory | ignored, with a warning | Files read on every run, whether or not the command mentions them. |
-| `fileFlags` | flags | ignored, with a warning | Flags whose value is a file of references, added to `--env-file` and `--path`. |
-| `observers` | `[{ "on": [<event type> or "*"], "run": [<argv>] }]` | ignored, with a warning | Your commands, run on events. They get the event as JSON on stdin and cannot change an outcome. |
-
-An unknown key or a bad value rejects the whole file, with a warning. A broken user file
-leaves the defaults, so everything asks. A broken repo file makes everything ask.
-
-## Put it behind your task runner
-
-A recipe that starts with `may-i` gates every run of it, whoever runs it. With just
-([`examples/justfile`](./examples/justfile)):
-
-```just
-deploy-prod reason="ship main to production":
-    may-i --reason {{ quote(reason) }} -- op run --env-file .env.deploy-prod -- ./deploy.sh production
-```
-
-With make:
-
-```make
-deploy-prod:
-	may-i --reason "ship main to production" -- op run --env-file .env.deploy-prod -- ./deploy.sh production
-```
-
-Each recipe gets an env file of its own, with `op://` references only, naming only what
-its script reads ([`examples/.env.deploy-prod`](./examples/.env.deploy-prod)).
-[`examples/check-env-files.ts`](./examples/check-env-files.ts) enforces that in pre-commit
-and CI. Tell your agents the same thing in their AGENTS.md:
-[`examples/AGENTS.snippet.md`](./examples/AGENTS.snippet.md).
-
-## The Claude Code hook
-
-`may-i-hook` is a `PreToolUse` hook. It reads each Bash call. When the call runs `op` or
-`varlock` without `may-i` in front, the hook blocks it and gives Claude the gated command
-to run instead. `op --version`, `op --help`, `op help` and `op completion` pass. Add it to
-`~/.claude/settings.json` or a project's `.claude/settings.json`:
-
-```json
-{
-  "hooks": {
-    "PreToolUse": [
-      { "matcher": "Bash", "hooks": [{ "type": "command", "command": "may-i-hook" }] }
-    ]
-  }
-}
-```
-
-`may-i-hook --wrap` rewrites the call to go through may-i instead of blocking it.
-`may-i-hook --gate <command>` says how to call may-i when it is not on PATH. The hook
-cannot see `op` behind a variable, inside a script file or fed to a shell on stdin. An
-agent that runs `op` that way gets your environment only, which has the staging token
-at most.
-
-## Receipts
-
-may-i writes one JSON line per request to `~/.local/state/may-i/receipts.jsonl`
-(`$XDG_STATE_HOME/may-i/receipts.jsonl` when that is set). Only you can read it: mode 600,
-in a directory of mode 700. Each receipt keeps every event of its request, so
-`may-i verify` can judge it again later. If the file cannot be written, may-i refuses
-before the command starts. On a Mac it also writes a one-line
-copy to the system log with `logger -t may-i`, which Console.app shows.
-
-```text
-$ may-i log --since 1h
-2026-11-02 09:14  codex-1               allowed, exit 0              op read op://Staging/postgres/url
-2026-11-02 09:14  claude-code:bc3851a2  approved, exit 0             op run --env-file .env.deploy-prod -- ./deploy.sh production
-2026-11-02 09:14  codex-1               refused: not approved: deny  op read op://Prod/stripe/secret-key
-```
+- [Configuration](https://craigruks.github.io/ai-may-i/configuration/): which vault is which, in `~/.config/may-i/config.json`, and a repo's `.may-i.json` that can only tighten.
+- [Task runners](https://craigruks.github.io/ai-may-i/task-runners/): just and make recipes that start with `may-i`, and [`examples/AGENTS.snippet.md`](./examples/AGENTS.snippet.md) for your agents.
+- [The Claude Code hook](https://craigruks.github.io/ai-may-i/claude-code-hook/): `may-i-hook` blocks, or wraps, any Bash call that runs `op` without may-i.
+- [Receipts](https://craigruks.github.io/ai-may-i/receipts/): one JSON line per request, `may-i log` and `may-i verify`.
+- [Service accounts](https://craigruks.github.io/ai-may-i/guides/service-accounts/): staging in the environment, prod in Keychain.
 
 ## Design principles
 

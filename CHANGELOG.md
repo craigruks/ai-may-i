@@ -11,6 +11,11 @@ minor version can change behaviour.
   reads, so an approval lists only the fields that command uses. Runs in pre-commit and CI.
   The examples now give each recipe a file of its own.
 
+### Changed
+
+- The README is shorter. The option, command and exit-code tables moved to the docs site's
+  command-line page, and configuration, task runners, the hook and receipts link to theirs.
+
 ## 0.1.0 (2026-11-09)
 
 ### Added
