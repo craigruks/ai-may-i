@@ -7,7 +7,8 @@ import { readFileSync } from "node:fs";
 import { constants, homedir } from "node:os";
 import { runCli } from "./cli.js";
 import { systemShell } from "./dialog.js";
-import { EXIT_REFUSED, type Spawn } from "./gate.js";
+import { failClosed } from "./fail-closed.js";
+import type { Spawn } from "./gate.js";
 import { systemRunner } from "./observers.js";
 import { fileSink } from "./receipts.js";
 
@@ -32,27 +33,24 @@ const spawn: Spawn = (argv, env) => {
   return signal === undefined ? 1 : 128 + signal;
 };
 
-let code: number;
-try {
-  code = runCli({
-    argv: process.argv.slice(2),
-    env: process.env,
-    cwd: process.cwd(),
-    home: homedir(),
-    platform: process.platform,
-    readText,
-    shell: systemShell,
-    spawn,
-    runObserver: systemRunner,
-    sinkFor: fileSink,
-    clock: { now: () => new Date() },
-    newId: randomUUID,
-    stdout: (line) => console.log(line),
-    stderr: (line) => console.error(line),
-  });
-} catch (err) {
-  // A gate that broke must never fall through to the command it stands in front of.
-  console.error("may-i: failed before it could decide:", err);
-  code = EXIT_REFUSED;
-}
+const code = failClosed(
+  () =>
+    runCli({
+      argv: process.argv.slice(2),
+      env: process.env,
+      cwd: process.cwd(),
+      home: homedir(),
+      platform: process.platform,
+      readText,
+      shell: systemShell,
+      spawn,
+      runObserver: systemRunner,
+      sinkFor: fileSink,
+      clock: { now: () => new Date() },
+      newId: randomUUID,
+      stdout: (line) => console.log(line),
+      stderr: (line) => console.error(line),
+    }),
+  (line) => console.error(line),
+);
 process.exit(code);

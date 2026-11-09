@@ -38,6 +38,7 @@ so any test whose events break a rule fails, whatever it set out to check.
 | One Approve covers more than one run | Every request asks again | [`test/lifecycle.test.ts`](https://github.com/craigruks/ai-may-i/blob/main/test/lifecycle.test.ts) "asks again for every request: one Approve is one run" | none |
 | A secret value shows in the prompt | Redaction | [`test/redact.test.ts`](https://github.com/craigruks/ai-may-i/blob/main/test/redact.test.ts) | `spec/redact.json` `redactCommand` |
 | A newline or escape code hides part of the command | Control characters shown as text | [`test/redact.test.ts`](https://github.com/craigruks/ai-may-i/blob/main/test/redact.test.ts) "never lets a control character through raw" | `spec/redact.json` `shellLine`: "shows a newline or escape code as text, never raw" |
+| A failure inside may-i before it decides | Any throw is a refusal: exit 77, nothing runs | [`test/fail-closed.test.ts`](https://github.com/craigruks/ai-may-i/blob/main/test/fail-closed.test.ts) "refuses with 77 and says why when may-i throws before deciding" | none |
 
 ## The prod token
 
@@ -76,5 +77,4 @@ lists them as known limits.
 | A process that runs as you reads the Keychain item with `security` | v0.1 reads the item through `/usr/bin/security`, which the item trusts | v0.2 |
 | `op` behind a variable, in a script file, or on a shell's stdin | The hook's lexer cannot see it | `spec/hook-lex.json`: the three "(a known limit)" rows |
 | An agent claims another agent's name | `--agent` is a label | [`src/agent.ts`](https://github.com/craigruks/ai-may-i/blob/main/src/agent.ts) |
-| A failure inside may-i before it decides | `src/main.ts` exits 77 on any throw, with no test of its own | none |
 | You approve a command you did not read | The prompt leads with the command | none |
