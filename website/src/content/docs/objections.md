@@ -11,11 +11,11 @@ answer rests on.
 Touch ID is great, but it gives too much access, because there's no way to limit it to a
 single item in a vault.
 
-- What 1Password's prompt for a terminal session says, and that it does not say which
-  agent, which command or which credential.
-- What one Touch ID approval unlocks: the whole account, for the session.
-- What one may-i Approve unlocks: one run of one command, with a service account that
-  reaches only the vaults it was given. Every request asks again
+- 1Password's prompt for a terminal session does not say which agent, which command or
+  which credential.
+- One Touch ID approval unlocks the whole account, for the session.
+- One may-i Approve unlocks one run of one command, with a service account that reaches
+  only the vaults it was given. Every request asks again
   ([`test/lifecycle.test.ts`](https://github.com/craigruks/ai-may-i/blob/main/test/lifecycle.test.ts),
   "asks again for every request").
 - That a service account can be revoked without touching your own account.
