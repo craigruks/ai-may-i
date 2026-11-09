@@ -1,6 +1,8 @@
 ---
 title: Receipts, log and verify
 description: The JSONL receipt may-i writes for every request, its copy in the system log, may-i log and may-i verify.
+sidebar:
+  label: Receipts
 ---
 
 ## The receipts file

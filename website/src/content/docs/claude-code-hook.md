@@ -1,6 +1,8 @@
 ---
 title: The Claude Code hook
 description: may-i-hook, a PreToolUse hook that routes Claude Code's op and varlock calls through may-i.
+sidebar:
+  label: Claude Code hook
 ---
 
 `may-i-hook` reads each Bash call Claude Code is about to make. When the call runs `op` or

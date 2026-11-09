@@ -1,6 +1,8 @@
 ---
 title: The command line
 description: Every option, command and exit code of may-i.
+sidebar:
+  label: CLI
 ---
 
 Put `may-i --` in front of the command:

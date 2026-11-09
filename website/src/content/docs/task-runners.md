@@ -1,6 +1,8 @@
 ---
 title: Task runners
 description: Put may-i in front of your deploy recipes with just or make.
+sidebar:
+  label: Task runners
 ---
 
 A recipe that starts with `may-i` gates every run of it, by you or by an agent. The
@@ -16,7 +18,7 @@ CI runs `just --dry-run` on every recipe, and
 checks that staging comes out `allow` and prod comes out `ask`.
 [`examples/check-env-files.ts`](https://github.com/craigruks/ai-may-i/blob/main/examples/check-env-files.ts)
 holds each recipe to the fields its script reads: see
-[Name only the fields a command uses](/ai-may-i/guides/name-only-the-fields/).
+[Name only the fields a command uses](/ai-may-i/guides/scope-each-command/).
 
 ## The env files
 

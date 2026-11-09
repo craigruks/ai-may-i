@@ -1,6 +1,8 @@
 ---
 title: Objection handling
 description: The hardest questions about may-i, each answered straight.
+sidebar:
+  label: Objections
 ---
 
 The questions a skeptical developer or security reviewer asks first, with the facts each

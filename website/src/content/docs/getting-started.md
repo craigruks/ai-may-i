@@ -1,6 +1,8 @@
 ---
 title: Getting started
 description: Build may-i, store the production token, write a config, and run a first command.
+sidebar:
+  label: Getting started
 ---
 
 This page sets up may-i on one Mac. You need the 1Password CLI (`op`), and two 1Password

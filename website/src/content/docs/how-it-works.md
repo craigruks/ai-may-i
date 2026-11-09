@@ -1,6 +1,8 @@
 ---
 title: How it works
 description: Every request as a sequence of typed events, and everything that reads them.
+sidebar:
+  label: How it works
 ---
 
 I really like the event-based design, because it makes it easier to log and find bugs over

@@ -1,6 +1,8 @@
 ---
 title: Review methodology and limits
 description: How may-i is checked before a change lands, what that review is not, and where findings go.
+sidebar:
+  label: Review
 ---
 
 may-i is **not audited** and is **not a security guarantee** (see

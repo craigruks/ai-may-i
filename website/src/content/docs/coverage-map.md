@@ -1,6 +1,8 @@
 ---
 title: Coverage map
 description: Each threat may-i guards against, the mechanism, and the test file and spec vector that prove it.
+sidebar:
+  label: Coverage map
 ---
 
 Each row is one way an agent's command could reach production secrets without your

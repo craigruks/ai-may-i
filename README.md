@@ -127,7 +127,7 @@ may-i shows every reference it is handed, so give each recipe an env file of its
 naming only what its script reads. Then the dialog above lists exactly those fields.
 [`examples/`](./examples) follows the rule, and
 [`examples/check-env-files.ts`](./examples/check-env-files.ts) enforces it in pre-commit
-and CI: [the guide](https://craigruks.github.io/ai-may-i/guides/name-only-the-fields/).
+and CI: [the guide](https://craigruks.github.io/ai-may-i/guides/scope-each-command/).
 
 ## More
 

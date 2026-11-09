@@ -1,6 +1,8 @@
 ---
 title: Configuration and tiers
 description: The config files, every key, how a tier is decided, and why a repo file can only tighten.
+sidebar:
+  label: Configuration
 ---
 
 ## The files

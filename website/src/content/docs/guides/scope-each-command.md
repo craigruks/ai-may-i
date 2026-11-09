@@ -1,6 +1,8 @@
 ---
 title: Name only the fields a command uses
 description: One env file per recipe, and a check in pre-commit and CI that holds each one to the secrets its script reads.
+sidebar:
+  label: Scope each command
 ---
 
 may-i lists every `op://` reference a command can reach. It cannot know which of them the
