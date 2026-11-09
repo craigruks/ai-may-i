@@ -31,7 +31,19 @@ vault. The [service accounts guide](/ai-may-i/guides/service-accounts/) shows ho
    ```sh
    may-i -- op run --env-file .env.deploy-prod -- ./deploy.sh production
    ```
-5. **Check the Mac** with `may-i doctor`, and you're good to go.
+5. **Enforce the scope** in your repo, so a commit can't widen an approval. From this
+   checkout, copy the checker and the pre-commit hook, then add the recipe they run:
+   ```sh
+   cp examples/check-env-files.ts path/to/your-repo/
+   mkdir -p path/to/your-repo/.githooks && cp examples/pre-commit path/to/your-repo/.githooks/
+   git -C path/to/your-repo config core.hooksPath .githooks
+   ```
+   ```just
+   check-env-files:
+       bun check-env-files.ts
+   ```
+   Run the same `bun check-env-files.ts` in CI, so a commit made without the hook still fails.
+6. **Check the Mac** with `may-i doctor`, and you're good to go.
 
 The rest of this page is the same, step by step.
 
