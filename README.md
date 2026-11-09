@@ -8,8 +8,18 @@
 Documentation: [`website/`](./website/src/content/docs/index.mdx), published at
 https://craigruks.github.io/ai-may-i/ once the repo is public.
 
-<!-- VOICE: brief 1 (README opening) -->
-`may-i` runs in front of an agent's command and shows you which agent asks, which command it runs and which 1Password references it reaches.
+`may-i` puts two screens in front of your 1Password credentials, so before an agent gets them,
+you know what's asking and why.
+
+Earlier this year I stopped running agents in a multi-pane terminal, where I could see which
+one was asking, and started running many agents out of sight. Then a prompt would pop up
+asking for a whole vault's worth of production credentials, and I didn't know who was asking,
+why, or for what. 1Password's prompt only says that something in the terminal wants access to
+the vault. That's it.
+
+may-i first shows a macOS notification, so it doesn't break your flow: glance up and see the
+command that wants credentials. Click **Review** and a dialog shows the command, the agent and
+which `op://` references it will use. Then Deny or Approve.
 
 <!-- DEMO: assets/demo.gif (the notification, the dialog, then `may-i log`) -->
 
@@ -25,8 +35,26 @@ https://craigruks.github.io/ai-may-i/ once the repo is public.
 
 ## Why
 
-<!-- VOICE: brief 2 (README Why) -->
-1Password's own prompt for the CLI does not say which agent, which command or which credential.
+I use may-i by default for any local agent work in my repos. When I want many agents running
+at once, I still know what each one is asking for, and what I'm giving it.
+
+Blindly approving an AI agent's access to your production vault is a terrible idea. In the
+early days of building and hacking, with a vault that doesn't reach much, it's okay. It even
+worked for me with a multi-pane setup, because I could see which agent was asking. Once I was
+doing tens of PRs a day, I needed something better.
+
+The split setup is a great starting point when you're hacking a project together. Staging
+matches production. The credentials have the same names in both, but they live in two
+separate vaults. Agents can read all of the staging vault, so they can deploy to staging, and
+staging can optionally read production. Later you can move production reads onto production
+workers only. Eventually you stop needing any of this, because you use short-lived tokens from
+your cloud. For small and mid-sized projects, or as an interim step, it's what I'd recommend.
+
+What I refused to compromise on: an agent getting access to a whole vault. It still frustrates
+me that none of the big password managers, the ones with cloud sync, a desktop app and a phone
+app, let a CLI ask for a single item in a vault. That granularity doesn't exist, and I don't
+have the time or the interest to build and secure my own vault service. So this is what I came
+up with.
 
 ## Install
 
